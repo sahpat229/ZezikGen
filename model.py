@@ -3,8 +3,6 @@ import numpy as np
 import os
 import tensorflow as tf
 
-from tqdm import tqdm
-
 
 class CharacterModel():
     def __init__(self, data_provider, sess, config_file_path):
@@ -74,8 +72,7 @@ class CharacterModel():
 
         cells = []
         for _ in range(self.config['num_layers']):
-            cell = tf.contrib.rnn.LSTMCell(self.config['hidden_layer_size'],
-                                           forget_bias=1.0)
+            cell = tf.contrib.rnn.BasicLSTMCell(self.config['hidden_layer_size'])
             if training and (self.config['input_keep_prob'] < 1.0 or self.config['output_keep_prob'] < 1.0):
                 cell = tf.contrib.rnn.DropoutWrapper(cell,
                                                      input_keep_prob=self.config['input_keep_prob'],
