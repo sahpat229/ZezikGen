@@ -145,6 +145,18 @@ class CharacterModel():
     def get_zero_state(self, batch_size):
         return self.sess.run(self.multi_cell.zero_state(batch_size, dtype=tf.float32))
 
+    def restore(self):
+        saver = tf.train.Saver()
+        latest_checkpoint = tf.train.latest_checkpoint(self.config['model_save_path'])
+        print("LOADING FROM:", os.path.join(self.config['model_save_path'], latest_checkpoint))
+        saver.restore(self.sess, latest_checkpoint)
+
+    def infer(self):
+        primers = ['The ', 'A ', 'B', 'So ']
+        sampled_strings = [self.sample_model(primer=primer) for primer in primers]
+        for i, sampled_string in enumerate(sampled_strings):
+            print("SAMPLED STRING " + str(i) + ":", sampled_string)
+
     def make_path(self, path):
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
