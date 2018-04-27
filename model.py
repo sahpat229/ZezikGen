@@ -150,7 +150,7 @@ class CharacterModel():
 
     def infer(self):
         primers = ['The ', 'A ', 'B', 'So ']
-        sampled_strings = [self.sample_model(primer=primer) for primer in primers]
+        sampled_strings = [self.sample_model(num_chars_generate=600, primer=primer) for primer in primers]
         for i, sampled_string in enumerate(sampled_strings):
             print("SAMPLED STRING " + str(i) + ":", sampled_string)
 
@@ -198,7 +198,6 @@ class CharacterModel():
 
     def train(self):
         sample_directory = os.path.dirname(self.config['sample_file'])
-        self.clear_path(sample_directory)
         self.make_path(sample_directory)
         with open(self.config['sample_file'], 'w+'):
             pass  # make the sampling file so we can append to it
