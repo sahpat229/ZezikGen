@@ -3,6 +3,8 @@ import numpy as np
 import os
 import tensorflow as tf
 
+from tqdm import tqdm
+
 
 class CharacterModel():
     def __init__(self, data_provider, sess, config_file_path):
@@ -21,13 +23,18 @@ class CharacterModel():
         self.sess = sess
         with open(config_file_path) as config_file:
             self.config = json.load(config_file)
+
+        print("CONFIG:")
+        print(self.config)
+
         self.build_model(self.config['training'])
 
-    def get_vocab_size(self, training_file_path):
-        """ Get number of unique characters in the training file """
-        with open(training_file_path) as training_file:
-            vocab_size = len(set(training_file.read()))
-        return vocab_size
+    def assign_learning_rate(self, epoch):
+        lr = float(self.config['learning_rate'])
+        decay_rate = self.config['learning_rate_decay']
+        after_epochs = self.config['learning_rate_decay_after']
+        self.sess.run(tf.assign(self.learning_rate,
+                                lr * (decay_rate ** max(0, epoch - after_epochs))))
 
     def build_model(self, training):
         if not training:
@@ -37,16 +44,21 @@ class CharacterModel():
         self.config['vocab_size'] = self.data_provider.vocab_size
 
         self.inputs = tf.placeholder(dtype=tf.int32,
-                                     shape=[self.config['batch_size'], self.config['timesteps']])
+                                     shape=[None, self.config['timesteps']])
         inputs = tf.one_hot(self.inputs, self.config['vocab_size'])  # shape is now [batch_size, timesteps, vocab_size]
         inputs = tf.cast(inputs, tf.float32)
 
         self.initial_state = tf.placeholder(dtype=tf.float32,
-                                            shape=[self.config['num_layers'], 2, self.config['batch_size'], self.config['hidden_layer_size']])
+                                            shape=[self.config['num_layers'], 2, None, self.config['hidden_layer_size']])
+        self.sequence_lengths = tf.placeholder(dtype=tf.int32,
+                                               shape=[None])
 
         if training:
+            self.learning_rate = tf.Variable(self.config['learning_rate'], trainable=False)
             self.targets = tf.placeholder(dtype=tf.int32,
-                                          shape=[self.config['batch_size'], self.config['timesteps']])
+                                          shape=[None, self.config['timesteps']])
+            self.weights = tf.placeholder(dtype=tf.float32,
+                                          shape=[None, self.config['timesteps']])
 
         if training and self.config['output_keep_prob'] < 1.0:
             inputs = tf.nn.dropout(inputs,
@@ -76,7 +88,8 @@ class CharacterModel():
         outputs, self.final_state = tf.nn.dynamic_rnn(cell=self.multi_cell,
                                                       inputs=inputs,
                                                       initial_state=initial_state,
-                                                      dtype=tf.float32)  # outputs is shape [batch_size, timesteps, num_hidden]
+                                                      dtype=tf.float32,
+                                                      sequence_length=self.sequence_lengths)  # outputs is shape [batch_size, timesteps, num_hidden]
         # self.final_state is an LSTMStateTuple for each layer
 
         outputs = tf.reshape(outputs,
@@ -87,16 +100,9 @@ class CharacterModel():
                                  use_bias=True,
                                  kernel_initializer=tf.variance_scaling_initializer())
         self.logits = tf.reshape(logits,
-                                 shape=[self.config['batch_size'], self.config['timesteps'], self.config['vocab_size']])
+                                 shape=[-1, self.config['timesteps'], self.config['vocab_size']])
         self.probs = tf.reshape(tf.nn.softmax(logits),
-                                shape=[self.config['batch_size'], self.config['timesteps'], self.config['vocab_size']])
-
-        if training:
-            self.loss = tf.contrib.seq2seq.sequence_loss(logits=self.logits,
-                                                         targets=self.targets,
-                                                         weights=tf.ones([self.config['batch_size'], self.config['timesteps']],
-                                                                         dtype=tf.float32))
-            self.build_optimizers()
+                                shape=[-1, self.config['timesteps'], self.config['vocab_size']])  # shape [batch_size, timesteps, vocab_size]
 
         # find the index of the maximum probability along the vocab_size axis (2) and cast to integer
         self.predictions = tf.cast(tf.argmax(self.logits, axis=2), tf.int32)
@@ -104,17 +110,24 @@ class CharacterModel():
                                       shape=[self.config['batch_size'], self.config['timesteps']])
 
         if training:
+            self.loss = tf.contrib.seq2seq.sequence_loss(logits=self.logits,
+                                                         targets=self.targets,
+                                                         weights=self.weights)
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.predictions, self.targets), tf.float32))
+            self.build_optimizers()
 
     def build_summaries(self):
-        accuracy, loss = [tf.Variable(0.) for _ in range(2)]
-        tf.summary.scalar('accuracy', accuracy)
-        loss = tf.summary.scalar('loss', loss)
+        tf.summary.scalar('accuracy', self.accuracy)
+        tf.summary.scalar('loss', self.loss)
         summaries = tf.summary.merge_all()
-        return summaries, {'accuracy': accuracy, 'loss': loss}
+        return summaries
 
     def build_optimizers(self):
-        self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+        trainable_vars = tf.trainable_variables()
+        gradients = tf.gradients(self.loss, trainable_vars)
+        clipped_gradients, _ = tf.clip_by_global_norm(gradients, self.config['grad_clip'])
+        self.optimizer_op = optimizer.apply_gradients(zip(clipped_gradients, trainable_vars))
 
     def clear_path(self, folder):
         if not os.path.exists(folder):
@@ -138,11 +151,14 @@ class CharacterModel():
 
     def sample_model(self, num_chars_generate=200, primer='The '):
         initial_state = self.get_zero_state(1)
+        sequence_lengths = np.ones([1]).astype(np.int32)
         for char in primer[:-1]:
-            x = np.array([[self.data_provider.convert_char(char)]])
+            x = np.zeros([1, self.config['timesteps']])
+            x[0, 0] = self.data_provider.convert_char(char)
             feed_dict = {
                 self.inputs: x,
-                self.initial_state: initial_state
+                self.initial_state: initial_state,
+                self.sequence_lengths: sequence_lengths
             }
             initial_state = self.sess.run(self.final_state,
                                           feed_dict=feed_dict)
@@ -150,61 +166,81 @@ class CharacterModel():
         sampled_string = primer
         char = primer[-1]
         for _ in range(num_chars_generate):
-            x = np.array([[self.data_provider.convert_char(char)]])
+            x = np.zeros([1, self.config['timesteps']])
+            x[0, 0] = self.data_provider.convert_char(char)
             feed_dict = {
                 self.inputs: x,
-                self.initial_state: initial_state
+                self.initial_state: initial_state,
+                self.sequence_lengths: sequence_lengths
             }
             initial_state, probs = self.sess.run([self.final_state, self.probs],
                                                  feed_dict=feed_dict)
-            char_index = np.random.choice(self.data_provider.vocab_size, p=probs.flatten())
-            char = self.data_provider.convert_char_index(self, char_index)
+            char_index = np.random.choice(self.data_provider.vocab_size, p=probs[:, 0, :].flatten())
+            char = self.data_provider.convert_char_index(char_index)
             sampled_string += char
 
         return sampled_string
 
     def save_model(self, iteration, max_to_keep=5):
-        self.clear_path(self.config['model_save_path'])
-        self.make_path(self.config['model_save_path'])
-
         saver = tf.train.Saver(max_to_keep=max_to_keep)
-        model_path = saver.save(self.sess, os.path.join(self.config['save_path'], "checkpoint.ckpt"),
+        model_path = saver.save(self.sess, os.path.join(self.config['model_save_path'], "checkpoint.ckpt"),
                                 global_step=iteration)
         print("Model saved in %s" % model_path)
 
     def train(self):
-        self.sess.run(tf.global_variables_initializer())
+        sample_directory = os.path.dirname(self.config['sample_file'])
+        self.clear_path(sample_directory)
+        self.make_path(sample_directory)
+        with open(self.config['sample_file'], 'w+'):
+            pass  # make the sampling file so we can append to it
+
+        self.clear_path(self.config['model_save_path'])
+        self.make_path(self.config['model_save_path'])
+
         self.clear_path(self.config['model_summary_path'])
         self.make_path(self.config['model_summary_path'])
 
+        merged_summaries = self.build_summaries()
         self.writer = tf.summary.FileWriter(self.config['model_summary_path'], self.sess.graph)
-        self.summaries, self.summary_vars = self.build_summaries()
+        self.sess.run(tf.global_variables_initializer())
 
-        initial_state = None
-        for iteration in range(self.config['iterations']):
+        initial_state = self.get_zero_state(self.config['batch_size'])
+        weights = np.ones([self.config['batch_size'], self.config['timesteps']])
+        sequence_lengths = np.ones([self.config['batch_size']]).astype(np.int32) * int(self.config['timesteps'])
+
+        epoch = 0
+        iteration = 0
+        while epoch < self.config['epochs']:
             x, y, reset = self.data_provider.sample_batch()
             if reset:
+                epoch += 1
+                self.assign_learning_rate(epoch)
+                self.save_model(epoch)
                 initial_state = self.get_zero_state(self.config['batch_size'])
 
             feed_dict = {
                 self.inputs: x,
                 self.targets: y,
-                self.initial_state: initial_state
+                self.initial_state: initial_state,
+                self.weights: weights,
+                self.sequence_lengths: sequence_lengths
             }
 
-            initial_state, loss, accuracy, _ = self.sess.run([self.final_state, self.loss, self.accuracy, self.optimizer],
-                                                             feed_dict=feed_dict)
-            print("LOSS:", type(loss), loss, "ACCURACY:", type(accuracy), accuracy)
-            # if iteration % 100 == 0:
-            #     print(self.sample_model())
+            initial_state, loss, accuracy, summary, _ = self.sess.run([self.final_state, self.loss, self.accuracy, merged_summaries,
+                                                                       self.optimizer_op],
+                                                                      feed_dict=feed_dict)
+            if iteration % self.config['summary_iterations'] == 0:
+                self.writer.add_summary(summary, iteration)
 
-            self.write_summaries(accuracy, loss, iteration)
+            if iteration % self.config['sample_iterations'] == 0:
+                sampled_string = self.sample_model()
+                self.write_sampled_string(sampled_string, iteration)
 
-    def write_summaries(self, accuracy, loss, iteration):
-        feed_dict = {
-            self.summary_vars['accuracy']: accuracy,
-            self.summary_vars['loss']: loss
-        }
-        summary = self.sess.run(self.summaries,
-                                feed_dict=feed_dict)
-        self.writer.add_summary(summary, iteration)
+            self.writer.add_summary(summary, iteration)
+            iteration += 1
+
+    def write_sampled_string(self, sampled_string, iteration):
+        with open(self.config['sample_file'], 'a') as sample_file:
+            sample_file.write(str(iteration) + ' BEGIN:' + '-' * 70 + '\n')
+            sample_file.write(sampled_string + '\n')
+            sample_file.write(str(iteration) + ' END  :' + '-' * 70 + '\n')

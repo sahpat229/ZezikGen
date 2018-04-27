@@ -17,13 +17,13 @@ class DataProvider():
 
         self.np_text = self.process_text(text)
         self.create_batches()
-        self.batch_number = self.num_batches
+        self.batch_number = 0
 
     def convert_char(self, char):
         return self.char_to_ix[char]
 
     def convert_char_index(self, char_index):
-        return self.ix_to_char(char_index)
+        return self.ix_to_char[char_index]
 
     def create_batches(self):
         if self.np_text.size - 1 < (self.config['batch_size'] * self.config['timesteps']):
