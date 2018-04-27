@@ -191,13 +191,13 @@ class CharacterModel():
         return sampled_string
 
     def save_model(self, iteration, max_to_keep=5):
-        saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.MODEL_VARIABLES),
-                               max_to_keep=max_to_keep)
-        model_path = saver.save(self.sess, os.path.join(self.config['model_save_path'], "checkpoint.ckpt"),
-                                global_step=iteration)
+        model_path = self.saver.save(self.sess, os.path.join(self.config['model_save_path'], "checkpoint.ckpt"),
+                                     global_step=iteration)
         print("Model saved in %s" % model_path)
 
     def train(self):
+        self.saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES),
+                                    max_to_keep=self.config['max_to_keep'])
         sample_directory = os.path.dirname(self.config['sample_file'])
         self.make_path(sample_directory)
         with open(self.config['sample_file'], 'w+'):

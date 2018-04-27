@@ -7,6 +7,7 @@
     "learning_rate": 2e-3,
     "learning_rate_decay": 0.97,
     "learning_rate_decay_after": 10,
+    "max_to_keep": 5,
     "model_save_path": "./checkpoints_tiny/",
     "model_summary_path": "./summaries_tiny/",
     "num_layers": 2,
