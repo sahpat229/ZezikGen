@@ -12,7 +12,7 @@
     "num_layers": 2,
     "output_keep_prob": 1.0,
     "sample_file": "./samples/samples_tiny.txt",
-    "sample_iterations": 100,
+    "sample_iterations": 500,
     "save_iterations": 500,
     "summary_iterations": 50,
     "timesteps": 50,

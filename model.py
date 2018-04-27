@@ -158,7 +158,7 @@ class CharacterModel():
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
 
-    def sample_model(self, num_chars_generate=200, primer='The '):
+    def sample_model(self, num_chars_generate=600, primer='The '):
         initial_state = self.get_zero_state(1)
         sequence_lengths = np.ones([1]).astype(np.int32)
         for char in primer[:-1]:
@@ -191,7 +191,8 @@ class CharacterModel():
         return sampled_string
 
     def save_model(self, iteration, max_to_keep=5):
-        saver = tf.train.Saver(max_to_keep=max_to_keep)
+        saver = tf.train.Saver(var_list=tf.GraphKeys.MODEL_VARIABLES,
+                               max_to_keep=max_to_keep)
         model_path = saver.save(self.sess, os.path.join(self.config['model_save_path'], "checkpoint.ckpt"),
                                 global_step=iteration)
         print("Model saved in %s" % model_path)
