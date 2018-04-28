@@ -148,15 +148,10 @@ class CharacterModel():
         latest_checkpoint = tf.train.latest_checkpoint(self.config['model_save_path'])
         print("LOADING FROM:", os.path.join(self.config['model_save_path'], latest_checkpoint))
         saver.restore(self.sess, latest_checkpoint)
-        with open("debug_val.txt", "w+") as val_file:
-            tvars = tf.trainable_variables()
-            tvars_vals = self.sess.run(tvars)
-            for var, val in zip(tvars, tvars_vals):
-                val_file.write(var.name + str(val) + '\n')
 
     def infer(self):
         primers = ['The ', 'A ', 'B', 'So ']
-        sampled_strings = [self.sample_model(num_chars_generate=600, primer=primer) for primer in primers]
+        sampled_strings = [self.sample_model(num_chars_generate=5000, primer=primer) for primer in primers]
         for i, sampled_string in enumerate(sampled_strings):
             print("SAMPLED STRING " + str(i) + ":", sampled_string)
 
@@ -229,13 +224,8 @@ class CharacterModel():
             x, y, reset = self.data_provider.sample_batch()
             if reset:
                 epoch += 1
-                self.assign_learning_rate(epoch)
-                with open("debug.txt", "w+") as debug_file:
-                    tvars = tf.trainable_variables()
-                    tvars_vals = self.sess.run(tvars)
-                    for var, val in zip(tvars, tvars_vals):
-                        debug_file.write(var.name + str(val) + '\n')
                 self.save_model(epoch)
+                self.assign_learning_rate(epoch)
                 initial_state = self.get_zero_state(self.config['batch_size'])
 
             feed_dict = {
@@ -258,10 +248,6 @@ class CharacterModel():
 
             self.writer.add_summary(summary, iteration)
             iteration += 1
-        primers = ['The ', 'A ', 'But ', 'So ', 'Therefore ', 'Thus ']
-        sampled_strings = [self.sample_model(num_chars_generate=5000, primer=primer) for primer in primers]
-        for i, sampled_string in enumerate(sampled_strings):
-            self.write_sampled_string(sampled_string, iteration + i)
 
     def write_sampled_string(self, sampled_string, iteration):
         with open(self.config['sample_file'], 'a') as sample_file:

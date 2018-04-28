@@ -10,7 +10,7 @@ class DataProvider():
         with open(config_file_path) as config_file:
             self.config = json.load(config_file)
 
-        unique_chars = set(text)
+        unique_chars = sorted(set(text))
         self.vocab_size = len(set(text))
         self.char_to_ix = {char: i for i, char in enumerate(unique_chars)}
         self.ix_to_char = {i: char for i, char in enumerate(unique_chars)}
