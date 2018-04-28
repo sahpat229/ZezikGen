@@ -3,7 +3,7 @@ import model
 import tensorflow as tf
 
 config_file_path = "./config.json"
-training_file_path = "./data/shakespeare.txt"
+training_file_path = "./data/zezik.txt"
 
 data_provider = dataprovider.DataProvider(training_file_path, config_file_path)
 
