@@ -143,10 +143,16 @@ class CharacterModel():
         return self.sess.run(self.multi_cell.zero_state(batch_size, dtype=tf.float32))
 
     def restore(self):
-        saver = tf.train.Saver()
+        self.sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver(tf.global_variables())
         latest_checkpoint = tf.train.latest_checkpoint(self.config['model_save_path'])
         print("LOADING FROM:", os.path.join(self.config['model_save_path'], latest_checkpoint))
         saver.restore(self.sess, latest_checkpoint)
+        with open("debug_val.txt", "w+") as val_file:
+            tvars = tf.trainable_variables()
+            tvars_vals = self.sess.run(tvars)
+            for var, val in zip(tvars, tvars_vals):
+                val_file.write(var.name + str(val) + '\n')
 
     def infer(self):
         primers = ['The ', 'A ', 'B', 'So ']
@@ -196,7 +202,7 @@ class CharacterModel():
         print("Model saved in %s" % model_path)
 
     def train(self):
-        self.saver = tf.train.Saver(var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES),
+        self.saver = tf.train.Saver(var_list=tf.global_variables(),
                                     max_to_keep=self.config['max_to_keep'])
         sample_directory = os.path.dirname(self.config['sample_file'])
         self.make_path(sample_directory)
@@ -224,6 +230,11 @@ class CharacterModel():
             if reset:
                 epoch += 1
                 self.assign_learning_rate(epoch)
+                with open("debug.txt", "w+") as debug_file:
+                    tvars = tf.trainable_variables()
+                    tvars_vals = self.sess.run(tvars)
+                    for var, val in zip(tvars, tvars_vals):
+                        debug_file.write(var.name + str(val) + '\n')
                 self.save_model(epoch)
                 initial_state = self.get_zero_state(self.config['batch_size'])
 
@@ -247,6 +258,10 @@ class CharacterModel():
 
             self.writer.add_summary(summary, iteration)
             iteration += 1
+        primers = ['The ', 'A ', 'But ', 'So ', 'Therefore ', 'Thus ']
+        sampled_strings = [self.sample_model(num_chars_generate=5000, primer=primer) for primer in primers]
+        for i, sampled_string in enumerate(sampled_strings):
+            self.write_sampled_string(sampled_string, iteration + i)
 
     def write_sampled_string(self, sampled_string, iteration):
         with open(self.config['sample_file'], 'a') as sample_file:
