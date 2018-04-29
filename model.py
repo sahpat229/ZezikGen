@@ -5,7 +5,7 @@ import tensorflow as tf
 
 
 class CharacterModel():
-    def __init__(self, data_provider, sess, config_file_path):
+    def __init__(self, data_provider, sess, config_file_path, dataset):
         """
         Config parameters:
             timesteps
@@ -21,6 +21,12 @@ class CharacterModel():
         self.sess = sess
         with open(config_file_path) as config_file:
             self.config = json.load(config_file)
+            self.config['model_save_path'] = os.path.join(self.config['model_save_path'],
+                                                          dataset + '/')
+            self.config['model_summary_path'] = os.path.join(self.config['model_summary_path'],
+                                                             dataset + '/')
+            self.config['sample_file'] = os.path.join(self.config['sample_file'],
+                                                      dataset + '.txt')
 
         print("CONFIG:")
         print(self.config)
@@ -142,18 +148,33 @@ class CharacterModel():
     def get_zero_state(self, batch_size):
         return self.sess.run(self.multi_cell.zero_state(batch_size, dtype=tf.float32))
 
-    def restore(self):
-        self.sess.run(tf.global_variables_initializer())
-        saver = tf.train.Saver(tf.global_variables())
-        latest_checkpoint = tf.train.latest_checkpoint(self.config['model_save_path'])
-        print("LOADING FROM:", os.path.join(self.config['model_save_path'], latest_checkpoint))
-        saver.restore(self.sess, latest_checkpoint)
-
     def infer(self):
         primers = ['The ', 'A ', 'B', 'So ']
         sampled_strings = [self.sample_model(num_chars_generate=5000, primer=primer) for primer in primers]
         for i, sampled_string in enumerate(sampled_strings):
             print("SAMPLED STRING " + str(i) + ":", sampled_string)
+
+    def initialize(self, restore=False):
+        self.saver = tf.train.Saver(var_list=tf.global_variables(),
+                                    max_to_keep=self.config['max_to_keep'])
+        self.sess.run(tf.global_variables_initializer())
+
+        sample_directory = os.path.dirname(self.config['sample_file'])
+        self.make_path(sample_directory)
+        self.make_path(self.config['model_save_path'])
+        self.make_path(self.config['model_summary_path'])
+        if restore:
+            latest_checkpoint = tf.train.latest_checkpoint(self.config['model_save_path'])
+            print("LOADING FROM:", os.path.join(self.config['model_save_path'], latest_checkpoint))
+            self.epoch = int(latest_checkpoint.split('-')[1])
+            self.saver.restore(self.sess, latest_checkpoint)
+        else:
+            self.epoch = 0
+            sample_directory = os.path.dirname(self.config['sample_file'])
+            with open(self.config['sample_file'], 'w+'):
+                pass  # make the sampling file so we can append to it
+            self.clear_path(self.config['model_save_path'])
+            self.clear_path(self.config['model_summary_path'])
 
     def make_path(self, path):
         if not os.path.exists(path):
@@ -197,35 +218,20 @@ class CharacterModel():
         print("Model saved in %s" % model_path)
 
     def train(self):
-        self.saver = tf.train.Saver(var_list=tf.global_variables(),
-                                    max_to_keep=self.config['max_to_keep'])
-        sample_directory = os.path.dirname(self.config['sample_file'])
-        self.make_path(sample_directory)
-        with open(self.config['sample_file'], 'w+'):
-            pass  # make the sampling file so we can append to it
-
-        self.clear_path(self.config['model_save_path'])
-        self.make_path(self.config['model_save_path'])
-
-        self.clear_path(self.config['model_summary_path'])
-        self.make_path(self.config['model_summary_path'])
-
         merged_summaries = self.build_summaries()
         self.writer = tf.summary.FileWriter(self.config['model_summary_path'], self.sess.graph)
-        self.sess.run(tf.global_variables_initializer())
 
         initial_state = self.get_zero_state(self.config['batch_size'])
         weights = np.ones([self.config['batch_size'], self.config['timesteps']])
         sequence_lengths = np.ones([self.config['batch_size']]).astype(np.int32) * int(self.config['timesteps'])
 
-        epoch = 0
         iteration = 0
-        while epoch < self.config['epochs']:
+        while self.epoch < self.config['epochs']:
             x, y, reset = self.data_provider.sample_batch()
             if reset:
-                epoch += 1
-                self.save_model(epoch)
-                self.assign_learning_rate(epoch)
+                self.epoch += 1
+                self.save_model(self.epoch)
+                self.assign_learning_rate(self.epoch)
                 initial_state = self.get_zero_state(self.config['batch_size'])
 
             feed_dict = {
