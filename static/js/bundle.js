@@ -1,5 +1,5 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
     value: true
@@ -7,7 +7,7 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _react = require("react");
+var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
@@ -27,112 +27,134 @@ var AppContainer = function (_React$Component) {
 
         var _this = _possibleConstructorReturn(this, (AppContainer.__proto__ || Object.getPrototypeOf(AppContainer)).call(this, props));
 
-        _this.state = {};
+        _this.handleSeedChange = _this.handleSeedChange.bind(_this);
+        _this.handleTemperatureChange = _this.handleTemperatureChange.bind(_this);
+        _this.handleOutputLengthChange = _this.handleOutputLengthChange.bind(_this);
+        _this.state = {
+            seed: '',
+            temperature: 1.0,
+            output_length: 600,
+            loading: false
+        };
         return _this;
     }
 
     _createClass(AppContainer, [{
-        key: "render",
+        key: 'handleSeedChange',
+        value: function handleSeedChange(e) {
+            var _this2 = this;
+
+            this.setState({ seed: e.target.value.toUpperCase() }, function () {
+                return console.log(_this2.state);
+            });
+        }
+    }, {
+        key: 'handleTemperatureChange',
+        value: function handleTemperatureChange() {
+            var _this3 = this;
+
+            this.setState({ temperature: e.target.value }, function () {
+                return console.log(_this3.state);
+            });
+        }
+    }, {
+        key: 'handleOutputLengthChange',
+        value: function handleOutputLengthChange() {
+            var _this4 = this;
+
+            this.setState({ output_length: e.target.value }, function () {
+                return console.log(_this4.state);
+            });
+        }
+    }, {
+        key: 'generateText',
+        value: function generateText() {
+            var _this5 = this;
+
+            $.ajax({
+                type: 'POST',
+                url: '/refresh_data',
+                data: { reports: JSON.stringify(this.state.loadedReports) },
+                success: function success() {
+                    _this5.retrieveData(query, _this5.state.loadedReports);
+                }
+            });
+        }
+    }, {
+        key: 'render',
         value: function render() {
             return _react2.default.createElement(
-                "div",
+                'div',
                 null,
-                _react2.default.createElement("header", null),
+                _react2.default.createElement('header', null),
                 _react2.default.createElement(
-                    "main",
-                    { role: "main" },
+                    'main',
+                    { role: 'main' },
                     _react2.default.createElement(
-                        "div",
-                        { "class": "container-fluid" },
+                        'div',
+                        { className: 'container' },
                         _react2.default.createElement(
-                            "div",
-                            { "class": "row" },
+                            'h1',
+                            { className: 'display-4' },
+                            'GENERATE IDEOLOGY'
+                        ),
+                        _react2.default.createElement(
+                            'form',
+                            null,
                             _react2.default.createElement(
-                                "div",
-                                { "class": "col-md-12" },
+                                'div',
+                                { className: 'form-inline' },
                                 _react2.default.createElement(
-                                    "h1",
-                                    null,
-                                    "Generate Ideology"
+                                    'div',
+                                    { className: 'col-md-10 mb-3' },
+                                    _react2.default.createElement(
+                                        'label',
+                                        { htmlFor: 'input-seed' },
+                                        'SEED TEXT'
+                                    ),
+                                    _react2.default.createElement('input', { type: 'text', id: 'input-seed', value: this.state.seed, onChange: this.handleSeedChange, className: 'form-control', placeholder: '' })
+                                ),
+                                _react2.default.createElement(
+                                    'div',
+                                    { className: 'col-md-1 mb-3' },
+                                    _react2.default.createElement(
+                                        'label',
+                                        { htmlFor: 'input-temperature' },
+                                        'TEMP'
+                                    ),
+                                    _react2.default.createElement('input', { type: 'number', id: 'input-temperature', value: this.state.temperature, onChange: this.handleTemperatureChange, className: 'form-control', placeholder: '' })
+                                ),
+                                _react2.default.createElement(
+                                    'div',
+                                    { className: 'col-md-1 mb-3' },
+                                    _react2.default.createElement(
+                                        'label',
+                                        { htmlFor: 'input-outputlength' },
+                                        'LENGTH'
+                                    ),
+                                    _react2.default.createElement('input', { type: 'number', id: 'input-outputlength', value: this.state.output_length, onChange: this.handleOutputLengthChange, className: 'form-control', placeholder: '' })
+                                ),
+                                _react2.default.createElement(
+                                    'button',
+                                    { className: 'btn btn-outline-light', type: 'button' },
+                                    'ZIZEK'
+                                ),
+                                _react2.default.createElement(
+                                    'button',
+                                    { className: 'btn btn-outline-light', type: 'button' },
+                                    'SHAKESPEARE'
+                                ),
+                                _react2.default.createElement(
+                                    'button',
+                                    { className: 'btn btn-outline-light', type: 'button' },
+                                    'GRAHAM'
                                 )
                             )
                         ),
-                        _react2.default.createElement(
-                            "div",
-                            { "class": "row" },
-                            _react2.default.createElement(
-                                "div",
-                                { "class": "col-md-4" },
-                                _react2.default.createElement(
-                                    "h2",
-                                    null,
-                                    "shakespeare"
-                                ),
-                                _react2.default.createElement(
-                                    "p",
-                                    null,
-                                    "Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. "
-                                ),
-                                _react2.default.createElement(
-                                    "p",
-                                    null,
-                                    _react2.default.createElement(
-                                        "a",
-                                        { "class": "btn btn-secondary", href: "#", role: "button" },
-                                        "View details \xBB"
-                                    )
-                                )
-                            ),
-                            _react2.default.createElement(
-                                "div",
-                                { "class": "col-md-4" },
-                                _react2.default.createElement(
-                                    "h2",
-                                    null,
-                                    "zizek"
-                                ),
-                                _react2.default.createElement(
-                                    "p",
-                                    null,
-                                    "Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. "
-                                ),
-                                _react2.default.createElement(
-                                    "p",
-                                    null,
-                                    _react2.default.createElement(
-                                        "a",
-                                        { "class": "btn btn-secondary", href: "#", role: "button" },
-                                        "View details \xBB"
-                                    )
-                                )
-                            ),
-                            _react2.default.createElement(
-                                "div",
-                                { "class": "col-md-4" },
-                                _react2.default.createElement(
-                                    "h2",
-                                    null,
-                                    "xd"
-                                ),
-                                _react2.default.createElement(
-                                    "p",
-                                    null,
-                                    "Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus."
-                                ),
-                                _react2.default.createElement(
-                                    "p",
-                                    null,
-                                    _react2.default.createElement(
-                                        "a",
-                                        { "class": "btn btn-secondary", href: "#", role: "button" },
-                                        "View details \xBB"
-                                    )
-                                )
-                            )
-                        )
+                        _react2.default.createElement('div', { className: 'input-group' })
                     )
                 ),
-                _react2.default.createElement("footer", null)
+                _react2.default.createElement('footer', null)
             );
         }
     }]);
