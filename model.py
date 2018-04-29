@@ -167,7 +167,7 @@ class CharacterModel():
         self.make_path(self.config['model_summary_path'])
         if restore:
             latest_checkpoint = tf.train.latest_checkpoint(self.config['model_save_path'])
-            print("LOADING FROM:", os.path.join(self.config['model_save_path'], latest_checkpoint))
+            print("LOADING FROM:", latest_checkpoint)
             self.epoch = int(latest_checkpoint.split('-')[1])
             self.saver.restore(self.sess, latest_checkpoint)
         else:
