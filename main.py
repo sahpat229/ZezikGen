@@ -16,5 +16,5 @@ data_provider = dataprovider.DataProvider(training_file_path, config_file_path)
 
 sess = tf.Session()
 char_model = model.CharacterModel(data_provider, sess, config_file_path, dataset)
-char_model.initialize(restore=True)
+char_model.initialize(restore=False)
 char_model.train()

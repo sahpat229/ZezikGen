@@ -3,6 +3,8 @@ import numpy as np
 import os
 import tensorflow as tf
 
+from utils import softmax
+
 
 class CharacterModel():
     def __init__(self, data_provider, sess, config_file_path, dataset):
@@ -165,7 +167,7 @@ class CharacterModel():
         self.make_path(self.config['model_summary_path'])
         if restore:
             latest_checkpoint = tf.train.latest_checkpoint(self.config['model_save_path'])
-            print("LOADING FROM:", os.path.join(self.config['model_save_path'], latest_checkpoint))
+            print("LOADING FROM:", latest_checkpoint)
             self.epoch = int(latest_checkpoint.split('-')[1])
             self.saver.restore(self.sess, latest_checkpoint)
         else:
@@ -180,7 +182,7 @@ class CharacterModel():
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
 
-    def sample_model(self, num_chars_generate=600, primer='The '):
+    def sample_model(self, num_chars_generate=600, primer='The ', temperature=1.0):
         initial_state = self.get_zero_state(1)
         sequence_lengths = np.ones([1]).astype(np.int32)
         for char in primer[:-1]:
@@ -204,9 +206,13 @@ class CharacterModel():
                 self.initial_state: initial_state,
                 self.sequence_lengths: sequence_lengths
             }
-            initial_state, probs = self.sess.run([self.final_state, self.probs],
-                                                 feed_dict=feed_dict)
-            char_index = np.random.choice(self.data_provider.vocab_size, p=probs[:, 0, :].flatten())
+            initial_state, logits = self.sess.run([self.final_state, self.logits],
+                                                  feed_dict=feed_dict)
+            logits = logits[:, 0, :].flatten()
+            assert logits.shape[0] == self.data_provider.vocab_size
+            probs = softmax(logits, temperature=temperature)
+
+            char_index = np.random.choice(self.data_provider.vocab_size, p=probs)
             char = self.data_provider.convert_char_index(char_index)
             sampled_string += char
 
