@@ -1,4 +1,5 @@
 # taken from https://nolanbconaway.github.io/blog/2017/softmax-numpy
+import numpy as np
 
 
 def softmax(X, temperature=1.0, axis=None):
