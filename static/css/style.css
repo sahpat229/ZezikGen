@@ -3,24 +3,24 @@
  */
 
 /* Links */
-a,
-a:focus,
-a:hover {
-    color: #fff;
-}
+/* a, */
+/* a:focus, */
+/* a:hover { */
+    /* color: #fff; */
+/* } */
 
 /*
  * Base structure
  */
 
-html,
-body {
-    background-color: #111;
-}
+/* html, */
+/* body { */
+    /* background-color: #111; */
+/* } */
 
-body {
-    color: #fff;
-}
+/* body { */
+    /* color: #fff; */
+/* } */
 
 /* .form-control, */
 /* .form-control:hover, */
