@@ -30,8 +30,6 @@ class DataProvider():
             raise ValueError('Decrease batch_size or timesteps, not enough data')
 
         self.num_batches = int((self.np_text.size - 1) / (self.config['batch_size'] * self.config['timesteps']))
-        print("text len:", self.np_text.size)
-        print("NUM Batches:", self.num_batches)
         x_text = self.np_text[0:self.num_batches * self.config['batch_size'] * self.config['timesteps']]
         y_text = self.np_text[1:self.num_batches * self.config['batch_size'] * self.config['timesteps'] + 1]
 
@@ -51,3 +49,10 @@ class DataProvider():
         self.batch_number += 1
 
         return x, y, reset
+
+    def sample_real(self, n_chars_generate=600):
+        low, high = (0, self.np_text.size - n_chars_generate)
+        if high <= 0:
+            raise ValueError('n_chars_generate is too high')
+        idx = np.random.randint(low=low, high=high)
+        return "".join(map(self.ix_to_char.get, self.np_text[idx:idx + n_chars_generate].tolist()))
