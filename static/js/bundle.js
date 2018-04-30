@@ -40,10 +40,10 @@ var AppContainer = function (_React$Component) {
         _this.handleOutputLengthChange = _this.handleOutputLengthChange.bind(_this);
         _this.state = {
             primer: '',
-            temperature: 1.0,
-            n_chars_generate: 600,
+            temperature: 0.60,
+            n_chars_generate: 500,
             loading: false,
-            generated_text: {}
+            generated_sample: null
         };
         return _this;
     }
@@ -80,12 +80,57 @@ var AppContainer = function (_React$Component) {
                 success: function success(d) {
                     _this2.setState({
                         loading: false,
-                        generated_text: JSON.parse(d)
+                        generated_sample: JSON.parse(d)
                     }, function () {
                         return console.log(_this2.state);
                     });
                 }
             });
+        }
+    }, {
+        key: 'renderSample',
+        value: function renderSample() {
+            if (!this.state.generated_sample) {
+                return '';
+            }
+            var loaded_sample = this.state.generated_sample;
+            var display_name = null;
+            switch (loaded_sample.dataset) {
+                case 'zizek':
+                    display_name = 'Slavoj Žižek';
+                    break;
+                case 'shakespeare':
+                    display_name = 'William Shakespeare';
+                    break;
+                case 'graham':
+                    display_name = 'Paul Graham';
+                    break;
+                default:
+                    display_name = '';
+            }
+            return _react2.default.createElement(
+                'blockquote',
+                { className: 'blockquote' },
+                _react2.default.createElement(
+                    'div',
+                    { className: 'display-linebreak' },
+                    _react2.default.createElement(
+                        'p',
+                        { className: 'mb-0' },
+                        loaded_sample.sample
+                    )
+                ),
+                _react2.default.createElement(
+                    'footer',
+                    { className: 'blockquote-footer' },
+                    display_name + 'bot on ',
+                    _react2.default.createElement(
+                        'cite',
+                        { title: 'Source Title' },
+                        loaded_sample.primer.trim()
+                    )
+                )
+            );
         }
     }, {
         key: 'render',
@@ -104,15 +149,15 @@ var AppContainer = function (_React$Component) {
                         { className: 'container' },
                         _react2.default.createElement(
                             'h1',
-                            { className: 'display-4' },
-                            'PURE IDEOLOGY GENERATOR'
+                            { className: 'display-3 my-5' },
+                            '\u017DI\u017DEK GENERATOR'
                         ),
                         _react2.default.createElement(
                             'div',
                             { className: 'row' },
                             _react2.default.createElement(
                                 'div',
-                                { className: 'col-md-4' },
+                                { className: 'col-md-2' },
                                 'SEED TEXT',
                                 _react2.default.createElement(
                                     'div',
@@ -124,6 +169,7 @@ var AppContainer = function (_React$Component) {
                                             id: 'field-primer:',
                                             type: 'text',
                                             fullWidth: true,
+                                            style: { marginBottom: 40 },
                                             value: this.state.primer,
                                             onChange: function onChange(e) {
                                                 _this3.handleSeedChange(e.target.value);
@@ -131,18 +177,17 @@ var AppContainer = function (_React$Component) {
                                         })
                                     )
                                 ),
-                                'LSTM TEMPERATURE',
+                                'TEMPERATURE',
                                 _react2.default.createElement(
                                     'div',
                                     { className: 'row' },
                                     _react2.default.createElement(
                                         'div',
-                                        { className: 'col-8' },
+                                        { className: 'col-7' },
                                         _react2.default.createElement(_Slider2.default, {
                                             min: .01,
                                             max: 1.00,
                                             step: .01,
-                                            style: { margin: 0 },
                                             onChange: function onChange(e, v) {
                                                 _this3.handleTemperatureChange(v);
                                             },
@@ -151,7 +196,7 @@ var AppContainer = function (_React$Component) {
                                     ),
                                     _react2.default.createElement(
                                         'div',
-                                        { className: 'col-4' },
+                                        { className: 'col-5' },
                                         _react2.default.createElement(_TextField2.default, {
                                             id: 'field-temperature',
                                             type: 'number',
@@ -166,16 +211,16 @@ var AppContainer = function (_React$Component) {
                                         })
                                     )
                                 ),
-                                '# CHARACTERS TO GENERATE',
+                                '# CHARACTERS',
                                 _react2.default.createElement(
                                     'div',
                                     { className: 'row' },
                                     _react2.default.createElement(
                                         'div',
-                                        { className: 'col-8' },
+                                        { className: 'col-7' },
                                         _react2.default.createElement(_Slider2.default, {
                                             min: 1,
-                                            max: 1000,
+                                            max: 999,
                                             step: 1,
                                             onChange: function onChange(e, v) {
                                                 _this3.handleOutputLengthChange(v);
@@ -185,12 +230,12 @@ var AppContainer = function (_React$Component) {
                                     ),
                                     _react2.default.createElement(
                                         'div',
-                                        { className: 'col-4' },
+                                        { className: 'col-5' },
                                         _react2.default.createElement(_TextField2.default, {
                                             id: 'field-chars',
                                             type: 'number',
                                             min: 1,
-                                            max: 1000,
+                                            max: 999,
                                             step: 1,
                                             fullWidth: true,
                                             value: this.state.n_chars_generate,
@@ -199,37 +244,54 @@ var AppContainer = function (_React$Component) {
                                             }
                                         })
                                     )
+                                ),
+                                _react2.default.createElement(
+                                    'div',
+                                    { className: 'form-row' },
+                                    _react2.default.createElement(
+                                        'div',
+                                        { className: 'col-4' },
+                                        _react2.default.createElement(
+                                            'button',
+                                            { className: 'btn btn-block btn-outline-dark', type: 'button', onClick: function onClick() {
+                                                    _this3.generateText('zizek');
+                                                } },
+                                            'SZ'
+                                        )
+                                    ),
+                                    _react2.default.createElement(
+                                        'div',
+                                        { className: 'col-4' },
+                                        _react2.default.createElement(
+                                            'button',
+                                            { className: 'btn btn-block btn-outline-dark', type: 'button', onClick: function onClick() {
+                                                    _this3.generateText('shakespeare');
+                                                } },
+                                            'WS'
+                                        )
+                                    ),
+                                    _react2.default.createElement(
+                                        'div',
+                                        { className: 'col-4' },
+                                        _react2.default.createElement(
+                                            'button',
+                                            { className: 'btn btn-block btn-outline-dark', type: 'button', onClick: function onClick() {
+                                                    _this3.generateText('graham');
+                                                } },
+                                            'PG'
+                                        )
+                                    )
                                 )
                             ),
                             _react2.default.createElement(
                                 'div',
-                                { className: 'col-md-8' },
-                                this.state.generated_text.sample
-                            )
-                        ),
-                        _react2.default.createElement(
-                            'div',
-                            { className: 'row' },
-                            _react2.default.createElement(
-                                'button',
-                                { className: 'btn btn-outline-dark', type: 'button', onClick: function onClick() {
-                                        _this3.generateText('zizek');
-                                    } },
-                                'ZIZEK'
+                                { className: 'col-md-5' },
+                                this.renderSample()
                             ),
                             _react2.default.createElement(
-                                'button',
-                                { className: 'btn btn-outline-dark', type: 'button', onClick: function onClick() {
-                                        _this3.generateText('shakespeare');
-                                    } },
-                                'SHAKESPEARE'
-                            ),
-                            _react2.default.createElement(
-                                'button',
-                                { className: 'btn btn-outline-dark', type: 'button', onClick: function onClick() {
-                                        _this3.generateText('graham');
-                                    } },
-                                'GRAHAM'
+                                'div',
+                                { className: 'col-md-5' },
+                                this.renderSample()
                             )
                         )
                     )

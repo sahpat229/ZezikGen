@@ -11,6 +11,7 @@ def index():
 @app.route('/generate_text', methods=['POST'])
 def generate_text():
     args = request.form.to_dict()
-    sample = generate_sample(args['dataset'], int(args['n_chars_generate']), args['primer'], float(args['temperature']))
+    sample = generate_sample(args['dataset'], int(args['n_chars_generate']), args['primer'].strip() + ' ', float(args['temperature']))
     args['sample'] = sample
+    print(json.dumps(args))
     return json.dumps(args)
