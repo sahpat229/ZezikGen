@@ -3,7 +3,6 @@ import model
 import os
 import tensorflow as tf
 
-
 def generate_sample(dataset, n_chars_generate=600, primer=None, temperature=1.0):
     if not primer:
         primer = 'The '

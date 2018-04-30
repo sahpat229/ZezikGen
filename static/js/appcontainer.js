@@ -1,6 +1,8 @@
 import React from 'react';
 import Slider from 'material-ui/Slider';
 import TextField from 'material-ui/TextField';
+import CircularProgress from 'material-ui/CircularProgress';
+import LinearProgress from 'material-ui/LinearProgress';
 
 export default class AppContainer extends React.Component {
     constructor(props) {
@@ -30,21 +32,23 @@ export default class AppContainer extends React.Component {
     }
 
     generateText(dataset) {
-            $.ajax({
-                type: 'POST',
-                url: '/generate_text',
-                data: {
-                    dataset: dataset,
-                    primer: this.state.primer,
-                    temperature: this.state.temperature,
-                    n_chars_generate: this.state.n_chars_generate
-                },
-                success: (d) => {
-                    this.setState({
-                        loading: false,
-                        generated_sample: JSON.parse(d)
-                    }, () => {return console.log(this.state)})
-                }
+            this.setState({loading: true}, () => {
+                $.ajax({
+                    type: 'POST',
+                    url: '/generate_text',
+                    data: {
+                        dataset: dataset,
+                        primer: this.state.primer,
+                        temperature: this.state.temperature,
+                        n_chars_generate: this.state.n_chars_generate
+                    },
+                    success: (d) => {
+                        this.setState({
+                            loading: false,
+                            generated_sample: JSON.parse(d)
+                        }, () => {return console.log(this.state)})
+                    }
+                });
             });
     }
 
@@ -67,13 +71,36 @@ export default class AppContainer extends React.Component {
             default:
                 display_name = '';
         }
-        return (
-            <blockquote className="blockquote">
-                <div className="display-linebreak">
-                    <p className="mb-0">{loaded_sample.sample}</p>
+
+        if (this.state.loading) {
+            return (
+                <div className="col-md-10">
+                    <LinearProgress />
                 </div>
-                <footer className="blockquote-footer">{display_name + 'bot on '}<cite title="Source Title">{loaded_sample.primer.trim()}</cite></footer>
-            </blockquote>
+            )
+        }
+
+        return (
+            <div className="col-md-10">
+                <div className="row">
+                    <div className="col-md-6 m-0">
+                        <blockquote className="blockquote">
+                            <div className="display-linebreak">
+                                <p className="mb-0">{loaded_sample.sample}</p>
+                            </div>
+                            <footer className="blockquote-footer text-uppercase">{display_name + 'bot on '}<cite title="Source Title">{loaded_sample.primer.trim()}</cite></footer>
+                        </blockquote>
+                    </div>
+                    <div className="col-md-6 m-0">
+                       <blockquote className="blockquote">
+                            <div className="display-linebreak">
+                                <p className="mb-0">{loaded_sample.real}</p>
+                            </div>
+                            <footer className="blockquote-footer text-uppercase">{'Real ' + display_name + ' quote'}</footer>
+                        </blockquote>
+                    </div>
+                </div>
+            </div>
         )
     }
 
@@ -154,22 +181,17 @@ export default class AppContainer extends React.Component {
                                 </div>
                                 <div className="form-row">
                                     <div className="col-4">
-                                        <button className="btn btn-block btn-outline-dark" type="button" onClick={() => {this.generateText('zizek')}}>SZ</button>
+                                        <button className="btn btn-block btn-outline-dark px-0" type="button" onClick={() => {this.generateText('zizek')}}>SZ</button>
                                     </div>
                                     <div className="col-4">
-                                        <button className="btn btn-block btn-outline-dark" type="button" onClick={() => {this.generateText('shakespeare')}}>WS</button>
+                                        <button className="btn btn-block btn-outline-dark px-0" type="button" onClick={() => {this.generateText('shakespeare')}}>WS</button>
                                     </div>
                                     <div className="col-4">
-                                        <button className="btn btn-block btn-outline-dark" type="button" onClick={() => {this.generateText('graham')}}>PG</button>
+                                        <button className="btn btn-block btn-outline-dark px-0" type="button" onClick={() => {this.generateText('graham')}}>PG</button>
                                     </div>
                                 </div>
                             </div>
-                            <div className="col-md-5">
-                                {this.renderSample()}
-                            </div>
-                            <div className="col-md-5">
-                                {this.renderSample()}
-                            </div>
+                            {this.renderSample()}
                         </div>
                     </div>
                 </main>
