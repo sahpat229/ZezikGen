@@ -3,6 +3,7 @@ import model
 import os
 import tensorflow as tf
 
+
 def generate_sample(dataset, n_chars_generate=600, primer=None, temperature=1.0):
     if not primer:
         primer = 'The '
@@ -17,3 +18,11 @@ def generate_sample(dataset, n_chars_generate=600, primer=None, temperature=1.0)
                                                  primer=primer,
                                                  temperature=temperature)
     return sampled_string
+
+
+def generate_real(dataset, n_chars_generate=600):
+    config_file_path = os.path.join("./configs/", dataset + ".json")
+    training_file_path = os.path.join("./data/", dataset + ".txt")
+
+    data_provider = dataprovider.DataProvider(training_file_path, config_file_path)
+    return data_provider.sample_real(n_chars_generate)
