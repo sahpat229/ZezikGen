@@ -19,6 +19,14 @@ var _TextField = require('material-ui/TextField');
 
 var _TextField2 = _interopRequireDefault(_TextField);
 
+var _CircularProgress = require('material-ui/CircularProgress');
+
+var _CircularProgress2 = _interopRequireDefault(_CircularProgress);
+
+var _LinearProgress = require('material-ui/LinearProgress');
+
+var _LinearProgress2 = _interopRequireDefault(_LinearProgress);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -40,10 +48,10 @@ var AppContainer = function (_React$Component) {
         _this.handleOutputLengthChange = _this.handleOutputLengthChange.bind(_this);
         _this.state = {
             primer: '',
-            temperature: 1.0,
-            n_chars_generate: 600,
+            temperature: 0.60,
+            n_chars_generate: 500,
             loading: false,
-            generated_text: {}
+            generated_sample: null
         };
         return _this;
     }
@@ -68,24 +76,114 @@ var AppContainer = function (_React$Component) {
         value: function generateText(dataset) {
             var _this2 = this;
 
-            $.ajax({
-                type: 'POST',
-                url: '/generate_text',
-                data: {
-                    dataset: dataset,
-                    primer: this.state.primer,
-                    temperature: this.state.temperature,
-                    n_chars_generate: this.state.n_chars_generate
-                },
-                success: function success(d) {
-                    _this2.setState({
-                        loading: false,
-                        generated_text: JSON.parse(d)
-                    }, function () {
-                        return console.log(_this2.state);
-                    });
-                }
+            this.setState({ loading: true }, function () {
+                $.ajax({
+                    type: 'POST',
+                    url: '/generate_text',
+                    data: {
+                        dataset: dataset,
+                        primer: _this2.state.primer,
+                        temperature: _this2.state.temperature,
+                        n_chars_generate: _this2.state.n_chars_generate
+                    },
+                    success: function success(d) {
+                        _this2.setState({
+                            loading: false,
+                            generated_sample: JSON.parse(d)
+                        }, function () {
+                            return console.log(_this2.state);
+                        });
+                    }
+                });
             });
+        }
+    }, {
+        key: 'renderSample',
+        value: function renderSample() {
+            if (!this.state.generated_sample) {
+                return '';
+            }
+            var loaded_sample = this.state.generated_sample;
+            var display_name = null;
+            switch (loaded_sample.dataset) {
+                case 'zizek':
+                    display_name = 'Slavoj Žižek';
+                    break;
+                case 'shakespeare':
+                    display_name = 'William Shakespeare';
+                    break;
+                case 'graham':
+                    display_name = 'Paul Graham';
+                    break;
+                default:
+                    display_name = '';
+            }
+
+            if (this.state.loading) {
+                return _react2.default.createElement(
+                    'div',
+                    { className: 'col-md-10' },
+                    _react2.default.createElement(_LinearProgress2.default, null)
+                );
+            }
+
+            return _react2.default.createElement(
+                'div',
+                { className: 'col-md-10' },
+                _react2.default.createElement(
+                    'div',
+                    { className: 'row' },
+                    _react2.default.createElement(
+                        'div',
+                        { className: 'col-md-6 m-0' },
+                        _react2.default.createElement(
+                            'blockquote',
+                            { className: 'blockquote' },
+                            _react2.default.createElement(
+                                'div',
+                                { className: 'display-linebreak' },
+                                _react2.default.createElement(
+                                    'p',
+                                    { className: 'mb-0' },
+                                    loaded_sample.sample
+                                )
+                            ),
+                            _react2.default.createElement(
+                                'footer',
+                                { className: 'blockquote-footer text-uppercase' },
+                                display_name + 'bot on ',
+                                _react2.default.createElement(
+                                    'cite',
+                                    { title: 'Source Title' },
+                                    loaded_sample.primer.trim()
+                                )
+                            )
+                        )
+                    ),
+                    _react2.default.createElement(
+                        'div',
+                        { className: 'col-md-6 m-0' },
+                        _react2.default.createElement(
+                            'blockquote',
+                            { className: 'blockquote' },
+                            _react2.default.createElement(
+                                'div',
+                                { className: 'display-linebreak' },
+                                _react2.default.createElement(
+                                    'p',
+                                    { className: 'mb-0' },
+                                    loaded_sample.real
+                                )
+                            ),
+                            _react2.default.createElement(
+                                'footer',
+                                { className: 'blockquote-footer text-uppercase' },
+                                'Real ' + display_name + ' quote'
+                            )
+                        )
+                    )
+                )
+            );
         }
     }, {
         key: 'render',
@@ -104,15 +202,15 @@ var AppContainer = function (_React$Component) {
                         { className: 'container' },
                         _react2.default.createElement(
                             'h1',
-                            { className: 'display-4' },
-                            'PURE IDEOLOGY GENERATOR'
+                            { className: 'display-3 my-5' },
+                            '\u017DI\u017DEK GENERATOR'
                         ),
                         _react2.default.createElement(
                             'div',
                             { className: 'row' },
                             _react2.default.createElement(
                                 'div',
-                                { className: 'col-md-4' },
+                                { className: 'col-md-2' },
                                 'SEED TEXT',
                                 _react2.default.createElement(
                                     'div',
@@ -124,6 +222,7 @@ var AppContainer = function (_React$Component) {
                                             id: 'field-primer:',
                                             type: 'text',
                                             fullWidth: true,
+                                            style: { marginBottom: 40 },
                                             value: this.state.primer,
                                             onChange: function onChange(e) {
                                                 _this3.handleSeedChange(e.target.value);
@@ -131,18 +230,17 @@ var AppContainer = function (_React$Component) {
                                         })
                                     )
                                 ),
-                                'LSTM TEMPERATURE',
+                                'TEMPERATURE',
                                 _react2.default.createElement(
                                     'div',
                                     { className: 'row' },
                                     _react2.default.createElement(
                                         'div',
-                                        { className: 'col-8' },
+                                        { className: 'col-7' },
                                         _react2.default.createElement(_Slider2.default, {
                                             min: .01,
                                             max: 1.00,
                                             step: .01,
-                                            style: { margin: 0 },
                                             onChange: function onChange(e, v) {
                                                 _this3.handleTemperatureChange(v);
                                             },
@@ -151,7 +249,7 @@ var AppContainer = function (_React$Component) {
                                     ),
                                     _react2.default.createElement(
                                         'div',
-                                        { className: 'col-4' },
+                                        { className: 'col-5' },
                                         _react2.default.createElement(_TextField2.default, {
                                             id: 'field-temperature',
                                             type: 'number',
@@ -166,16 +264,16 @@ var AppContainer = function (_React$Component) {
                                         })
                                     )
                                 ),
-                                '# CHARACTERS TO GENERATE',
+                                '# CHARACTERS',
                                 _react2.default.createElement(
                                     'div',
                                     { className: 'row' },
                                     _react2.default.createElement(
                                         'div',
-                                        { className: 'col-8' },
+                                        { className: 'col-7' },
                                         _react2.default.createElement(_Slider2.default, {
                                             min: 1,
-                                            max: 1000,
+                                            max: 999,
                                             step: 1,
                                             onChange: function onChange(e, v) {
                                                 _this3.handleOutputLengthChange(v);
@@ -185,12 +283,12 @@ var AppContainer = function (_React$Component) {
                                     ),
                                     _react2.default.createElement(
                                         'div',
-                                        { className: 'col-4' },
+                                        { className: 'col-5' },
                                         _react2.default.createElement(_TextField2.default, {
                                             id: 'field-chars',
                                             type: 'number',
                                             min: 1,
-                                            max: 1000,
+                                            max: 999,
                                             step: 1,
                                             fullWidth: true,
                                             value: this.state.n_chars_generate,
@@ -199,38 +297,46 @@ var AppContainer = function (_React$Component) {
                                             }
                                         })
                                     )
+                                ),
+                                _react2.default.createElement(
+                                    'div',
+                                    { className: 'form-row' },
+                                    _react2.default.createElement(
+                                        'div',
+                                        { className: 'col-4' },
+                                        _react2.default.createElement(
+                                            'button',
+                                            { className: 'btn btn-block btn-outline-dark px-0', type: 'button', onClick: function onClick() {
+                                                    _this3.generateText('zizek');
+                                                } },
+                                            'SZ'
+                                        )
+                                    ),
+                                    _react2.default.createElement(
+                                        'div',
+                                        { className: 'col-4' },
+                                        _react2.default.createElement(
+                                            'button',
+                                            { className: 'btn btn-block btn-outline-dark px-0', type: 'button', onClick: function onClick() {
+                                                    _this3.generateText('shakespeare');
+                                                } },
+                                            'WS'
+                                        )
+                                    ),
+                                    _react2.default.createElement(
+                                        'div',
+                                        { className: 'col-4' },
+                                        _react2.default.createElement(
+                                            'button',
+                                            { className: 'btn btn-block btn-outline-dark px-0', type: 'button', onClick: function onClick() {
+                                                    _this3.generateText('graham');
+                                                } },
+                                            'PG'
+                                        )
+                                    )
                                 )
                             ),
-                            _react2.default.createElement(
-                                'div',
-                                { className: 'col-md-8' },
-                                this.state.generated_text.sample
-                            )
-                        ),
-                        _react2.default.createElement(
-                            'div',
-                            { className: 'row' },
-                            _react2.default.createElement(
-                                'button',
-                                { className: 'btn btn-outline-dark', type: 'button', onClick: function onClick() {
-                                        _this3.generateText('zizek');
-                                    } },
-                                'ZIZEK'
-                            ),
-                            _react2.default.createElement(
-                                'button',
-                                { className: 'btn btn-outline-dark', type: 'button', onClick: function onClick() {
-                                        _this3.generateText('shakespeare');
-                                    } },
-                                'SHAKESPEARE'
-                            ),
-                            _react2.default.createElement(
-                                'button',
-                                { className: 'btn btn-outline-dark', type: 'button', onClick: function onClick() {
-                                        _this3.generateText('graham');
-                                    } },
-                                'GRAHAM'
-                            )
+                            this.renderSample()
                         )
                     )
                 ),
@@ -244,7 +350,7 @@ var AppContainer = function (_React$Component) {
 
 exports.default = AppContainer;
 
-},{"material-ui/Slider":154,"material-ui/TextField":160,"react":195}],2:[function(require,module,exports){
+},{"material-ui/CircularProgress":154,"material-ui/LinearProgress":156,"material-ui/Slider":158,"material-ui/TextField":164,"react":199}],2:[function(require,module,exports){
 'use strict';
 
 var _react = require('react');
@@ -279,7 +385,7 @@ _reactDom2.default.render(_react2.default.createElement(
     _react2.default.createElement(_appcontainer2.default, null)
 ), document.getElementById('app-container'));
 
-},{"./appcontainer.js":1,"material-ui/styles/MuiThemeProvider":164,"material-ui/styles/baseThemes/darkBaseTheme":165,"material-ui/styles/getMuiTheme":168,"react":195,"react-dom":188}],3:[function(require,module,exports){
+},{"./appcontainer.js":1,"material-ui/styles/MuiThemeProvider":168,"material-ui/styles/baseThemes/darkBaseTheme":169,"material-ui/styles/getMuiTheme":172,"react":199,"react-dom":192}],3:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/array/from"), __esModule: true };
 },{"core-js/library/fn/array/from":23}],4:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/object/assign"), __esModule: true };
@@ -2699,7 +2805,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = emptyObject;
 }).call(this,require('_process'))
-},{"_process":200}],118:[function(require,module,exports){
+},{"_process":204}],118:[function(require,module,exports){
 'use strict';
 
 /**
@@ -2860,7 +2966,7 @@ function invariant(condition, format, a, b, c, d, e, f) {
 
 module.exports = invariant;
 }).call(this,require('_process'))
-},{"_process":200}],122:[function(require,module,exports){
+},{"_process":204}],122:[function(require,module,exports){
 'use strict';
 
 /**
@@ -3037,7 +3143,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = warning;
 }).call(this,require('_process'))
-},{"./emptyFunction":116,"_process":200}],126:[function(require,module,exports){
+},{"./emptyFunction":116,"_process":204}],126:[function(require,module,exports){
 'use strict';
 
 var uppercasePattern = /[A-Z]/g;
@@ -6297,6 +6403,545 @@ var _inherits2 = require('babel-runtime/helpers/inherits');
 
 var _inherits3 = _interopRequireDefault(_inherits2);
 
+var _simpleAssign = require('simple-assign');
+
+var _simpleAssign2 = _interopRequireDefault(_simpleAssign);
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _propTypes = require('prop-types');
+
+var _propTypes2 = _interopRequireDefault(_propTypes);
+
+var _autoPrefix = require('../utils/autoPrefix');
+
+var _autoPrefix2 = _interopRequireDefault(_autoPrefix);
+
+var _transitions = require('../styles/transitions');
+
+var _transitions2 = _interopRequireDefault(_transitions);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function getRelativeValue(value, min, max) {
+  var clampedValue = Math.min(Math.max(min, value), max);
+  return clampedValue / (max - min);
+}
+
+function getArcLength(fraction, props) {
+  return fraction * Math.PI * (props.size - props.thickness);
+}
+
+function getStyles(props, context) {
+  var max = props.max,
+      min = props.min,
+      size = props.size,
+      value = props.value;
+  var palette = context.muiTheme.baseTheme.palette;
+
+
+  var styles = {
+    root: {
+      position: 'relative',
+      display: 'inline-block',
+      width: size,
+      height: size
+    },
+    wrapper: {
+      width: size,
+      height: size,
+      display: 'inline-block',
+      transition: _transitions2.default.create('transform', '20s', null, 'linear'),
+      transitionTimingFunction: 'linear'
+    },
+    svg: {
+      width: size,
+      height: size,
+      position: 'relative'
+    },
+    path: {
+      stroke: props.color || palette.primary1Color,
+      strokeLinecap: 'round',
+      transition: _transitions2.default.create('all', '1.5s', null, 'ease-in-out')
+    }
+  };
+
+  if (props.mode === 'determinate') {
+    var relVal = getRelativeValue(value, min, max);
+    styles.path.transition = _transitions2.default.create('all', '0.3s', null, 'linear');
+    styles.path.strokeDasharray = getArcLength(relVal, props) + ', ' + getArcLength(1, props);
+  }
+
+  return styles;
+}
+
+var CircularProgress = function (_Component) {
+  (0, _inherits3.default)(CircularProgress, _Component);
+
+  function CircularProgress() {
+    (0, _classCallCheck3.default)(this, CircularProgress);
+    return (0, _possibleConstructorReturn3.default)(this, (CircularProgress.__proto__ || (0, _getPrototypeOf2.default)(CircularProgress)).apply(this, arguments));
+  }
+
+  (0, _createClass3.default)(CircularProgress, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this.scalePath(this.refs.path);
+      this.rotateWrapper(this.refs.wrapper);
+    }
+  }, {
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      clearTimeout(this.scalePathTimer);
+      clearTimeout(this.rotateWrapperTimer);
+    }
+  }, {
+    key: 'scalePath',
+    value: function scalePath(path) {
+      var _this2 = this;
+
+      var step = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+      if (this.props.mode !== 'indeterminate') return;
+
+      step %= 3;
+
+      if (step === 0) {
+        path.style.strokeDasharray = getArcLength(0, this.props) + ', ' + getArcLength(1, this.props);
+        path.style.strokeDashoffset = 0;
+        path.style.transitionDuration = '0ms';
+      } else if (step === 1) {
+        path.style.strokeDasharray = getArcLength(0.7, this.props) + ', ' + getArcLength(1, this.props);
+        path.style.strokeDashoffset = getArcLength(-0.3, this.props);
+        path.style.transitionDuration = '750ms';
+      } else {
+        path.style.strokeDasharray = getArcLength(0.7, this.props) + ', ' + getArcLength(1, this.props);
+        path.style.strokeDashoffset = getArcLength(-1, this.props);
+        path.style.transitionDuration = '850ms';
+      }
+
+      this.scalePathTimer = setTimeout(function () {
+        return _this2.scalePath(path, step + 1);
+      }, step ? 750 : 250);
+    }
+  }, {
+    key: 'rotateWrapper',
+    value: function rotateWrapper(wrapper) {
+      var _this3 = this;
+
+      if (this.props.mode !== 'indeterminate') return;
+
+      _autoPrefix2.default.set(wrapper.style, 'transform', 'rotate(0deg)');
+      _autoPrefix2.default.set(wrapper.style, 'transitionDuration', '0ms');
+
+      setTimeout(function () {
+        _autoPrefix2.default.set(wrapper.style, 'transform', 'rotate(1800deg)');
+        _autoPrefix2.default.set(wrapper.style, 'transitionDuration', '10s');
+        _autoPrefix2.default.set(wrapper.style, 'transitionTimingFunction', 'linear');
+      }, 50);
+
+      this.rotateWrapperTimer = setTimeout(function () {
+        return _this3.rotateWrapper(wrapper);
+      }, 10050);
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      var _props = this.props,
+          style = _props.style,
+          innerStyle = _props.innerStyle,
+          size = _props.size,
+          thickness = _props.thickness,
+          other = (0, _objectWithoutProperties3.default)(_props, ['style', 'innerStyle', 'size', 'thickness']);
+      var prepareStyles = this.context.muiTheme.prepareStyles;
+
+      var styles = getStyles(this.props, this.context);
+
+      return _react2.default.createElement(
+        'div',
+        (0, _extends3.default)({}, other, { style: prepareStyles((0, _simpleAssign2.default)(styles.root, style)) }),
+        _react2.default.createElement(
+          'div',
+          { ref: 'wrapper', style: prepareStyles((0, _simpleAssign2.default)(styles.wrapper, innerStyle)) },
+          _react2.default.createElement(
+            'svg',
+            {
+              viewBox: '0 0 ' + size + ' ' + size,
+              style: prepareStyles(styles.svg)
+            },
+            _react2.default.createElement('circle', {
+              ref: 'path',
+              style: prepareStyles(styles.path),
+              cx: size / 2,
+              cy: size / 2,
+              r: (size - thickness) / 2,
+              fill: 'none',
+              strokeWidth: thickness,
+              strokeMiterlimit: '20'
+            })
+          )
+        )
+      );
+    }
+  }]);
+  return CircularProgress;
+}(_react.Component);
+
+CircularProgress.defaultProps = {
+  mode: 'indeterminate',
+  value: 0,
+  min: 0,
+  max: 100,
+  size: 40,
+  thickness: 3.5
+};
+CircularProgress.contextTypes = {
+  muiTheme: _propTypes2.default.object.isRequired
+};
+CircularProgress.propTypes = process.env.NODE_ENV !== "production" ? {
+  /**
+   * Override the progress's color.
+   */
+  color: _propTypes2.default.string,
+  /**
+   * Style for inner wrapper div.
+   */
+  innerStyle: _propTypes2.default.object,
+  /**
+   * The max value of progress, only works in determinate mode.
+   */
+  max: _propTypes2.default.number,
+  /**
+   * The min value of progress, only works in determinate mode.
+   */
+  min: _propTypes2.default.number,
+  /**
+   * The mode of show your progress, indeterminate
+   * for when there is no value for progress.
+   */
+  mode: _propTypes2.default.oneOf(['determinate', 'indeterminate']),
+  /**
+   * The diameter of the progress in pixels.
+   */
+  size: _propTypes2.default.number,
+  /**
+   * Override the inline-styles of the root element.
+   */
+  style: _propTypes2.default.object,
+  /**
+   * Stroke width in pixels.
+   */
+  thickness: _propTypes2.default.number,
+  /**
+   * The value of progress, only works in determinate mode.
+   */
+  value: _propTypes2.default.number
+} : {};
+exports.default = CircularProgress;
+}).call(this,require('_process'))
+},{"../styles/transitions":174,"../utils/autoPrefix":177,"_process":204,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":188,"react":199,"simple-assign":202}],154:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = undefined;
+
+var _CircularProgress = require('./CircularProgress');
+
+var _CircularProgress2 = _interopRequireDefault(_CircularProgress);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = _CircularProgress2.default;
+},{"./CircularProgress":153}],155:[function(require,module,exports){
+(function (process){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends2 = require('babel-runtime/helpers/extends');
+
+var _extends3 = _interopRequireDefault(_extends2);
+
+var _objectWithoutProperties2 = require('babel-runtime/helpers/objectWithoutProperties');
+
+var _objectWithoutProperties3 = _interopRequireDefault(_objectWithoutProperties2);
+
+var _getPrototypeOf = require('babel-runtime/core-js/object/get-prototype-of');
+
+var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
+
+var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
+
+var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
+
+var _createClass2 = require('babel-runtime/helpers/createClass');
+
+var _createClass3 = _interopRequireDefault(_createClass2);
+
+var _possibleConstructorReturn2 = require('babel-runtime/helpers/possibleConstructorReturn');
+
+var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
+
+var _inherits2 = require('babel-runtime/helpers/inherits');
+
+var _inherits3 = _interopRequireDefault(_inherits2);
+
+var _simpleAssign = require('simple-assign');
+
+var _simpleAssign2 = _interopRequireDefault(_simpleAssign);
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _propTypes = require('prop-types');
+
+var _propTypes2 = _interopRequireDefault(_propTypes);
+
+var _transitions = require('../styles/transitions');
+
+var _transitions2 = _interopRequireDefault(_transitions);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function getRelativeValue(value, min, max) {
+  var clampedValue = Math.min(Math.max(min, value), max);
+  var rangeValue = max - min;
+  var relValue = Math.round((clampedValue - min) / rangeValue * 10000) / 10000;
+  return relValue * 100;
+}
+
+function getStyles(props, context) {
+  var max = props.max,
+      min = props.min,
+      value = props.value;
+  var _context$muiTheme = context.muiTheme,
+      palette = _context$muiTheme.baseTheme.palette,
+      borderRadius = _context$muiTheme.borderRadius;
+
+
+  var styles = {
+    root: {
+      position: 'relative',
+      height: 4,
+      display: 'block',
+      width: '100%',
+      backgroundColor: palette.primary3Color,
+      borderRadius: borderRadius,
+      margin: 0,
+      overflow: 'hidden'
+    },
+    bar: {
+      height: '100%'
+    },
+    barFragment1: {},
+    barFragment2: {}
+  };
+
+  if (props.mode === 'indeterminate') {
+    styles.barFragment1 = {
+      position: 'absolute',
+      backgroundColor: props.color || palette.primary1Color,
+      top: 0,
+      left: 0,
+      bottom: 0,
+      transition: _transitions2.default.create('all', '840ms', null, 'cubic-bezier(0.650, 0.815, 0.735, 0.395)')
+    };
+
+    styles.barFragment2 = {
+      position: 'absolute',
+      backgroundColor: props.color || palette.primary1Color,
+      top: 0,
+      left: 0,
+      bottom: 0,
+      transition: _transitions2.default.create('all', '840ms', null, 'cubic-bezier(0.165, 0.840, 0.440, 1.000)')
+    };
+  } else {
+    styles.bar.backgroundColor = props.color || palette.primary1Color;
+    styles.bar.transition = _transitions2.default.create('width', '.3s', null, 'linear');
+    styles.bar.width = getRelativeValue(value, min, max) + '%';
+  }
+
+  return styles;
+}
+
+var LinearProgress = function (_Component) {
+  (0, _inherits3.default)(LinearProgress, _Component);
+
+  function LinearProgress() {
+    (0, _classCallCheck3.default)(this, LinearProgress);
+    return (0, _possibleConstructorReturn3.default)(this, (LinearProgress.__proto__ || (0, _getPrototypeOf2.default)(LinearProgress)).apply(this, arguments));
+  }
+
+  (0, _createClass3.default)(LinearProgress, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      this.timers = {};
+
+      this.timers.bar1 = this.barUpdate('bar1', 0, this.refs.bar1, [[-35, 100], [100, -90]], 0);
+
+      this.timers.bar2 = setTimeout(function () {
+        _this2.barUpdate('bar2', 0, _this2.refs.bar2, [[-200, 100], [107, -8]], 0);
+      }, 850);
+    }
+  }, {
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      clearTimeout(this.timers.bar1);
+      clearTimeout(this.timers.bar2);
+    }
+  }, {
+    key: 'barUpdate',
+    value: function barUpdate(id, step, barElement, stepValues, timeToNextStep) {
+      var _this3 = this;
+
+      if (this.props.mode !== 'indeterminate') return;
+
+      timeToNextStep = timeToNextStep || 420;
+      step = step || 0;
+      step %= 4;
+
+      var right = this.context.muiTheme.isRtl ? 'left' : 'right';
+      var left = this.context.muiTheme.isRtl ? 'right' : 'left';
+
+      if (step === 0) {
+        barElement.style[left] = stepValues[0][0] + '%';
+        barElement.style[right] = stepValues[0][1] + '%';
+      } else if (step === 1) {
+        barElement.style.transitionDuration = '840ms';
+      } else if (step === 2) {
+        barElement.style[left] = stepValues[1][0] + '%';
+        barElement.style[right] = stepValues[1][1] + '%';
+      } else if (step === 3) {
+        barElement.style.transitionDuration = '0ms';
+      }
+      this.timers[id] = setTimeout(function () {
+        return _this3.barUpdate(id, step + 1, barElement, stepValues);
+      }, timeToNextStep);
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      var _props = this.props,
+          style = _props.style,
+          other = (0, _objectWithoutProperties3.default)(_props, ['style']);
+      var prepareStyles = this.context.muiTheme.prepareStyles;
+
+      var styles = getStyles(this.props, this.context);
+
+      return _react2.default.createElement(
+        'div',
+        (0, _extends3.default)({}, other, { style: prepareStyles((0, _simpleAssign2.default)(styles.root, style)) }),
+        _react2.default.createElement(
+          'div',
+          { style: prepareStyles(styles.bar) },
+          _react2.default.createElement('div', { ref: 'bar1', style: prepareStyles(styles.barFragment1) }),
+          _react2.default.createElement('div', { ref: 'bar2', style: prepareStyles(styles.barFragment2) })
+        )
+      );
+    }
+  }]);
+  return LinearProgress;
+}(_react.Component);
+
+LinearProgress.defaultProps = {
+  mode: 'indeterminate',
+  value: 0,
+  min: 0,
+  max: 100
+};
+LinearProgress.contextTypes = {
+  muiTheme: _propTypes2.default.object.isRequired
+};
+LinearProgress.propTypes = process.env.NODE_ENV !== "production" ? {
+  /**
+   * The color of the progress bar, defaults to
+   * primary color of theme.
+   */
+  color: _propTypes2.default.string,
+  /**
+   * The max value of progress, only works in determinate mode.
+   */
+  max: _propTypes2.default.number,
+  /**
+   * The min value of progress, only works in determinate mode.
+   */
+  min: _propTypes2.default.number,
+  /**
+   * The mode of show your progress, indeterminate for when
+   * there is no value for progress.
+   */
+  mode: _propTypes2.default.oneOf(['determinate', 'indeterminate']),
+  /**
+   * Override the inline-styles of the root element.
+   */
+  style: _propTypes2.default.object,
+  /**
+   * The value of progress, only works in determinate mode.
+   */
+  value: _propTypes2.default.number
+} : {};
+exports.default = LinearProgress;
+}).call(this,require('_process'))
+},{"../styles/transitions":174,"_process":204,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":188,"react":199,"simple-assign":202}],156:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = undefined;
+
+var _LinearProgress = require('./LinearProgress');
+
+var _LinearProgress2 = _interopRequireDefault(_LinearProgress);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = _LinearProgress2.default;
+},{"./LinearProgress":155}],157:[function(require,module,exports){
+(function (process){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends2 = require('babel-runtime/helpers/extends');
+
+var _extends3 = _interopRequireDefault(_extends2);
+
+var _objectWithoutProperties2 = require('babel-runtime/helpers/objectWithoutProperties');
+
+var _objectWithoutProperties3 = _interopRequireDefault(_objectWithoutProperties2);
+
+var _getPrototypeOf = require('babel-runtime/core-js/object/get-prototype-of');
+
+var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
+
+var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
+
+var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
+
+var _createClass2 = require('babel-runtime/helpers/createClass');
+
+var _createClass3 = _interopRequireDefault(_createClass2);
+
+var _possibleConstructorReturn2 = require('babel-runtime/helpers/possibleConstructorReturn');
+
+var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
+
+var _inherits2 = require('babel-runtime/helpers/inherits');
+
+var _inherits3 = _interopRequireDefault(_inherits2);
+
 var _defineProperty2 = require('babel-runtime/helpers/defineProperty');
 
 var _defineProperty3 = _interopRequireDefault(_defineProperty2);
@@ -7146,7 +7791,7 @@ Slider.propTypes = process.env.NODE_ENV !== "production" ? {
 } : {};
 exports.default = Slider;
 }).call(this,require('_process'))
-},{"../internal/FocusRipple":161,"../styles/transitions":170,"_process":200,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/defineProperty":14,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"keycode":151,"prop-types":184,"react":195,"simple-assign":198,"warning":199}],154:[function(require,module,exports){
+},{"../internal/FocusRipple":165,"../styles/transitions":174,"_process":204,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/defineProperty":14,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"keycode":151,"prop-types":188,"react":199,"simple-assign":202,"warning":203}],158:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -7161,7 +7806,7 @@ var _Slider2 = _interopRequireDefault(_Slider);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = _Slider2.default;
-},{"./Slider":153}],155:[function(require,module,exports){
+},{"./Slider":157}],159:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -7421,7 +8066,7 @@ EnhancedTextarea.propTypes = process.env.NODE_ENV !== "production" ? {
 } : {};
 exports.default = EnhancedTextarea;
 }).call(this,require('_process'))
-},{"_process":200,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":184,"react":195,"react-event-listener":189,"simple-assign":198}],156:[function(require,module,exports){
+},{"_process":204,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":188,"react":199,"react-event-listener":193,"simple-assign":202}],160:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -8015,7 +8660,7 @@ TextField.propTypes = process.env.NODE_ENV !== "production" ? {
 } : {};
 exports.default = TextField;
 }).call(this,require('_process'))
-},{"../styles/transitions":170,"./EnhancedTextarea":155,"./TextFieldHint":157,"./TextFieldLabel":158,"./TextFieldUnderline":159,"_process":200,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":184,"react":195,"react-dom":188,"recompose/shallowEqual":197,"simple-assign":198,"warning":199}],157:[function(require,module,exports){
+},{"../styles/transitions":174,"./EnhancedTextarea":159,"./TextFieldHint":161,"./TextFieldLabel":162,"./TextFieldUnderline":163,"_process":204,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":188,"react":199,"react-dom":192,"recompose/shallowEqual":201,"simple-assign":202,"warning":203}],161:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -8098,7 +8743,7 @@ TextFieldHint.defaultProps = {
 
 exports.default = TextFieldHint;
 }).call(this,require('_process'))
-},{"../styles/transitions":170,"_process":200,"prop-types":184,"react":195,"simple-assign":198}],158:[function(require,module,exports){
+},{"../styles/transitions":174,"_process":204,"prop-types":188,"react":199,"simple-assign":202}],162:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -8218,7 +8863,7 @@ TextFieldLabel.defaultProps = {
 
 exports.default = TextFieldLabel;
 }).call(this,require('_process'))
-},{"../styles/transitions":170,"_process":200,"prop-types":184,"react":195,"simple-assign":198}],159:[function(require,module,exports){
+},{"../styles/transitions":174,"_process":204,"prop-types":188,"react":199,"simple-assign":202}],163:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -8360,7 +9005,7 @@ TextFieldUnderline.defaultProps = defaultProps;
 
 exports.default = TextFieldUnderline;
 }).call(this,require('_process'))
-},{"../styles/transitions":170,"_process":200,"prop-types":184,"react":195,"simple-assign":198}],160:[function(require,module,exports){
+},{"../styles/transitions":174,"_process":204,"prop-types":188,"react":199,"simple-assign":202}],164:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -8375,7 +9020,7 @@ var _TextField2 = _interopRequireDefault(_TextField);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = _TextField2.default;
-},{"./TextField":156}],161:[function(require,module,exports){
+},{"./TextField":160}],165:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -8577,7 +9222,7 @@ FocusRipple.propTypes = process.env.NODE_ENV !== "production" ? {
 } : {};
 exports.default = FocusRipple;
 }).call(this,require('_process'))
-},{"../styles/transitions":170,"../utils/autoPrefix":173,"./ScaleIn":162,"_process":200,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":184,"react":195,"react-dom":188,"recompose/shallowEqual":197,"simple-assign":198}],162:[function(require,module,exports){
+},{"../styles/transitions":174,"../utils/autoPrefix":177,"./ScaleIn":166,"_process":204,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":188,"react":199,"react-dom":192,"recompose/shallowEqual":201,"simple-assign":202}],166:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -8708,7 +9353,7 @@ ScaleIn.propTypes = process.env.NODE_ENV !== "production" ? {
 } : {};
 exports.default = ScaleIn;
 }).call(this,require('_process'))
-},{"./ScaleInChild":163,"_process":200,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":184,"react":195,"react-transition-group/TransitionGroup":191,"simple-assign":198}],163:[function(require,module,exports){
+},{"./ScaleInChild":167,"_process":204,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":188,"react":199,"react-transition-group/TransitionGroup":195,"simple-assign":202}],167:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -8881,7 +9526,7 @@ ScaleInChild.propTypes = process.env.NODE_ENV !== "production" ? {
 } : {};
 exports.default = ScaleInChild;
 }).call(this,require('_process'))
-},{"../styles/transitions":170,"../utils/autoPrefix":173,"_process":200,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":184,"react":195,"react-dom":188,"simple-assign":198}],164:[function(require,module,exports){
+},{"../styles/transitions":174,"../utils/autoPrefix":177,"_process":204,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/extends":15,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":188,"react":199,"react-dom":192,"simple-assign":202}],168:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -8954,7 +9599,7 @@ MuiThemeProvider.propTypes = process.env.NODE_ENV !== "production" ? {
 } : {};
 exports.default = MuiThemeProvider;
 }).call(this,require('_process'))
-},{"./getMuiTheme":168,"_process":200,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":184,"react":195}],165:[function(require,module,exports){
+},{"./getMuiTheme":172,"_process":204,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/possibleConstructorReturn":18,"prop-types":188,"react":199}],169:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -8992,7 +9637,7 @@ exports.default = {
     clockCircleColor: (0, _colorManipulator.fade)(_colors.fullWhite, 0.12)
   }
 };
-},{"../../utils/colorManipulator":178,"../colors":167,"../spacing":169}],166:[function(require,module,exports){
+},{"../../utils/colorManipulator":182,"../colors":171,"../spacing":173}],170:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -9038,7 +9683,7 @@ exports.default = {
 }; /**
     * NB: If you update this file, please also update `docs/src/app/customization/Themes.js`
     */
-},{"../../utils/colorManipulator":178,"../colors":167,"../spacing":169}],167:[function(require,module,exports){
+},{"../../utils/colorManipulator":182,"../colors":171,"../spacing":173}],171:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -9329,7 +9974,7 @@ var faintBlack = exports.faintBlack = 'rgba(0, 0, 0, 0.12)';
 var fullWhite = exports.fullWhite = 'rgba(255, 255, 255, 1)';
 var darkWhite = exports.darkWhite = 'rgba(255, 255, 255, 0.87)';
 var lightWhite = exports.lightWhite = 'rgba(255, 255, 255, 0.54)';
-},{}],168:[function(require,module,exports){
+},{}],172:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -9712,7 +10357,7 @@ function getMuiTheme(muiTheme) {
 
   return muiTheme;
 }
-},{"../utils/autoprefixer":174,"../utils/callOnce":177,"../utils/colorManipulator":178,"../utils/rtl":179,"./baseThemes/lightBaseTheme":166,"./colors":167,"./typography":171,"./zIndex":172,"babel-runtime/helpers/toConsumableArray":19,"lodash.merge":152,"recompose/compose":196}],169:[function(require,module,exports){
+},{"../utils/autoprefixer":178,"../utils/callOnce":181,"../utils/colorManipulator":182,"../utils/rtl":183,"./baseThemes/lightBaseTheme":170,"./colors":171,"./typography":175,"./zIndex":176,"babel-runtime/helpers/toConsumableArray":19,"lodash.merge":152,"recompose/compose":200}],173:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9732,7 +10377,7 @@ exports.default = {
   desktopSubheaderHeight: 48,
   desktopToolbarHeight: 56
 };
-},{}],170:[function(require,module,exports){
+},{}],174:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -9767,7 +10412,7 @@ exports.default = {
     return property + ' ' + duration + ' ' + easeFunction + ' ' + delay;
   }
 };
-},{}],171:[function(require,module,exports){
+},{}],175:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -9803,7 +10448,7 @@ var Typography = function Typography() {
 };
 
 exports.default = new Typography();
-},{"./colors":167,"babel-runtime/helpers/classCallCheck":12}],172:[function(require,module,exports){
+},{"./colors":171,"babel-runtime/helpers/classCallCheck":12}],176:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9821,7 +10466,7 @@ exports.default = {
   snackbar: 2900,
   tooltip: 3000
 };
-},{}],173:[function(require,module,exports){
+},{}],177:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9832,7 +10477,7 @@ exports.default = {
     style[key] = value;
   }
 };
-},{}],174:[function(require,module,exports){
+},{}],178:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -9914,7 +10559,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var hasWarnedAboutUserAgent = false;
 }).call(this,require('_process'))
-},{"./autoprefixerDynamic":175,"./autoprefixerStatic":176,"_process":200,"inline-style-prefixer/dynamic/createPrefixer":127,"inline-style-prefixer/static/createPrefixer":135,"warning":199}],175:[function(require,module,exports){
+},{"./autoprefixerDynamic":179,"./autoprefixerStatic":180,"_process":204,"inline-style-prefixer/dynamic/createPrefixer":127,"inline-style-prefixer/static/createPrefixer":135,"warning":203}],179:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -9955,7 +10600,7 @@ exports.default = {
   plugins: [_calc2.default, _flex2.default, _flexboxIE2.default, _flexboxOld2.default, _gradient2.default, _sizing2.default, _transition2.default],
   prefixMap: { "chrome": { "transform": 35, "transformOrigin": 35, "transformOriginX": 35, "transformOriginY": 35, "backfaceVisibility": 35, "perspective": 35, "perspectiveOrigin": 35, "transformStyle": 35, "transformOriginZ": 35, "animation": 42, "animationDelay": 42, "animationDirection": 42, "animationFillMode": 42, "animationDuration": 42, "animationIterationCount": 42, "animationName": 42, "animationPlayState": 42, "animationTimingFunction": 42, "appearance": 60, "userSelect": 53, "fontKerning": 32, "textEmphasisPosition": 60, "textEmphasis": 60, "textEmphasisStyle": 60, "textEmphasisColor": 60, "boxDecorationBreak": 60, "clipPath": 54, "maskImage": 60, "maskMode": 60, "maskRepeat": 60, "maskPosition": 60, "maskClip": 60, "maskOrigin": 60, "maskSize": 60, "maskComposite": 60, "mask": 60, "maskBorderSource": 60, "maskBorderMode": 60, "maskBorderSlice": 60, "maskBorderWidth": 60, "maskBorderOutset": 60, "maskBorderRepeat": 60, "maskBorder": 60, "maskType": 60, "textDecorationStyle": 56, "textDecorationSkip": 56, "textDecorationLine": 56, "textDecorationColor": 56, "filter": 52, "fontFeatureSettings": 47, "breakAfter": 49, "breakBefore": 49, "breakInside": 49, "columnCount": 49, "columnFill": 49, "columnGap": 49, "columnRule": 49, "columnRuleColor": 49, "columnRuleStyle": 49, "columnRuleWidth": 49, "columns": 49, "columnSpan": 49, "columnWidth": 49 }, "safari": { "flex": 8, "flexBasis": 8, "flexDirection": 8, "flexGrow": 8, "flexFlow": 8, "flexShrink": 8, "flexWrap": 8, "alignContent": 8, "alignItems": 8, "alignSelf": 8, "justifyContent": 8, "order": 8, "transition": 6, "transitionDelay": 6, "transitionDuration": 6, "transitionProperty": 6, "transitionTimingFunction": 6, "transform": 8, "transformOrigin": 8, "transformOriginX": 8, "transformOriginY": 8, "backfaceVisibility": 8, "perspective": 8, "perspectiveOrigin": 8, "transformStyle": 8, "transformOriginZ": 8, "animation": 8, "animationDelay": 8, "animationDirection": 8, "animationFillMode": 8, "animationDuration": 8, "animationIterationCount": 8, "animationName": 8, "animationPlayState": 8, "animationTimingFunction": 8, "appearance": 10.1, "userSelect": 10.1, "backdropFilter": 10.1, "fontKerning": 9, "scrollSnapType": 10, "scrollSnapPointsX": 10, "scrollSnapPointsY": 10, "scrollSnapDestination": 10, "scrollSnapCoordinate": 10, "textEmphasisPosition": 7, "textEmphasis": 7, "textEmphasisStyle": 7, "textEmphasisColor": 7, "boxDecorationBreak": 10.1, "clipPath": 10.1, "maskImage": 10.1, "maskMode": 10.1, "maskRepeat": 10.1, "maskPosition": 10.1, "maskClip": 10.1, "maskOrigin": 10.1, "maskSize": 10.1, "maskComposite": 10.1, "mask": 10.1, "maskBorderSource": 10.1, "maskBorderMode": 10.1, "maskBorderSlice": 10.1, "maskBorderWidth": 10.1, "maskBorderOutset": 10.1, "maskBorderRepeat": 10.1, "maskBorder": 10.1, "maskType": 10.1, "textDecorationStyle": 10.1, "textDecorationSkip": 10.1, "textDecorationLine": 10.1, "textDecorationColor": 10.1, "shapeImageThreshold": 10, "shapeImageMargin": 10, "shapeImageOutside": 10, "filter": 9, "hyphens": 10.1, "flowInto": 10.1, "flowFrom": 10.1, "breakBefore": 8, "breakAfter": 8, "breakInside": 8, "regionFragment": 10.1, "columnCount": 8, "columnFill": 8, "columnGap": 8, "columnRule": 8, "columnRuleColor": 8, "columnRuleStyle": 8, "columnRuleWidth": 8, "columns": 8, "columnSpan": 8, "columnWidth": 8 }, "firefox": { "appearance": 55, "userSelect": 55, "boxSizing": 28, "textAlignLast": 48, "textDecorationStyle": 35, "textDecorationSkip": 35, "textDecorationLine": 35, "textDecorationColor": 35, "tabSize": 55, "hyphens": 42, "fontFeatureSettings": 33, "breakAfter": 51, "breakBefore": 51, "breakInside": 51, "columnCount": 51, "columnFill": 51, "columnGap": 51, "columnRule": 51, "columnRuleColor": 51, "columnRuleStyle": 51, "columnRuleWidth": 51, "columns": 51, "columnSpan": 51, "columnWidth": 51 }, "opera": { "flex": 16, "flexBasis": 16, "flexDirection": 16, "flexGrow": 16, "flexFlow": 16, "flexShrink": 16, "flexWrap": 16, "alignContent": 16, "alignItems": 16, "alignSelf": 16, "justifyContent": 16, "order": 16, "transform": 22, "transformOrigin": 22, "transformOriginX": 22, "transformOriginY": 22, "backfaceVisibility": 22, "perspective": 22, "perspectiveOrigin": 22, "transformStyle": 22, "transformOriginZ": 22, "animation": 29, "animationDelay": 29, "animationDirection": 29, "animationFillMode": 29, "animationDuration": 29, "animationIterationCount": 29, "animationName": 29, "animationPlayState": 29, "animationTimingFunction": 29, "appearance": 45, "userSelect": 40, "fontKerning": 19, "textEmphasisPosition": 45, "textEmphasis": 45, "textEmphasisStyle": 45, "textEmphasisColor": 45, "boxDecorationBreak": 45, "clipPath": 41, "maskImage": 45, "maskMode": 45, "maskRepeat": 45, "maskPosition": 45, "maskClip": 45, "maskOrigin": 45, "maskSize": 45, "maskComposite": 45, "mask": 45, "maskBorderSource": 45, "maskBorderMode": 45, "maskBorderSlice": 45, "maskBorderWidth": 45, "maskBorderOutset": 45, "maskBorderRepeat": 45, "maskBorder": 45, "maskType": 45, "textDecorationStyle": 43, "textDecorationSkip": 43, "textDecorationLine": 43, "textDecorationColor": 43, "filter": 39, "fontFeatureSettings": 34, "breakAfter": 36, "breakBefore": 36, "breakInside": 36, "columnCount": 36, "columnFill": 36, "columnGap": 36, "columnRule": 36, "columnRuleColor": 36, "columnRuleStyle": 36, "columnRuleWidth": 36, "columns": 36, "columnSpan": 36, "columnWidth": 36 }, "ie": { "flex": 10, "flexDirection": 10, "flexFlow": 10, "flexWrap": 10, "transform": 9, "transformOrigin": 9, "transformOriginX": 9, "transformOriginY": 9, "userSelect": 11, "wrapFlow": 11, "wrapThrough": 11, "wrapMargin": 11, "scrollSnapType": 11, "scrollSnapPointsX": 11, "scrollSnapPointsY": 11, "scrollSnapDestination": 11, "scrollSnapCoordinate": 11, "touchAction": 10, "hyphens": 11, "flowInto": 11, "flowFrom": 11, "breakBefore": 11, "breakAfter": 11, "breakInside": 11, "regionFragment": 11, "gridTemplateColumns": 11, "gridTemplateRows": 11, "gridTemplateAreas": 11, "gridTemplate": 11, "gridAutoColumns": 11, "gridAutoRows": 11, "gridAutoFlow": 11, "grid": 11, "gridRowStart": 11, "gridColumnStart": 11, "gridRowEnd": 11, "gridRow": 11, "gridColumn": 11, "gridColumnEnd": 11, "gridColumnGap": 11, "gridRowGap": 11, "gridArea": 11, "gridGap": 11, "textSizeAdjust": 11 }, "edge": { "userSelect": 15, "wrapFlow": 15, "wrapThrough": 15, "wrapMargin": 15, "scrollSnapType": 15, "scrollSnapPointsX": 15, "scrollSnapPointsY": 15, "scrollSnapDestination": 15, "scrollSnapCoordinate": 15, "hyphens": 15, "flowInto": 15, "flowFrom": 15, "breakBefore": 15, "breakAfter": 15, "breakInside": 15, "regionFragment": 15, "gridTemplateColumns": 15, "gridTemplateRows": 15, "gridTemplateAreas": 15, "gridTemplate": 15, "gridAutoColumns": 15, "gridAutoRows": 15, "gridAutoFlow": 15, "grid": 15, "gridRowStart": 15, "gridColumnStart": 15, "gridRowEnd": 15, "gridRow": 15, "gridColumn": 15, "gridColumnEnd": 15, "gridColumnGap": 15, "gridRowGap": 15, "gridArea": 15, "gridGap": 15 }, "ios_saf": { "flex": 8.1, "flexBasis": 8.1, "flexDirection": 8.1, "flexGrow": 8.1, "flexFlow": 8.1, "flexShrink": 8.1, "flexWrap": 8.1, "alignContent": 8.1, "alignItems": 8.1, "alignSelf": 8.1, "justifyContent": 8.1, "order": 8.1, "transition": 6, "transitionDelay": 6, "transitionDuration": 6, "transitionProperty": 6, "transitionTimingFunction": 6, "transform": 8.1, "transformOrigin": 8.1, "transformOriginX": 8.1, "transformOriginY": 8.1, "backfaceVisibility": 8.1, "perspective": 8.1, "perspectiveOrigin": 8.1, "transformStyle": 8.1, "transformOriginZ": 8.1, "animation": 8.1, "animationDelay": 8.1, "animationDirection": 8.1, "animationFillMode": 8.1, "animationDuration": 8.1, "animationIterationCount": 8.1, "animationName": 8.1, "animationPlayState": 8.1, "animationTimingFunction": 8.1, "appearance": 10, "userSelect": 10, "backdropFilter": 10, "fontKerning": 10, "scrollSnapType": 10, "scrollSnapPointsX": 10, "scrollSnapPointsY": 10, "scrollSnapDestination": 10, "scrollSnapCoordinate": 10, "boxDecorationBreak": 10, "clipPath": 10, "maskImage": 10, "maskMode": 10, "maskRepeat": 10, "maskPosition": 10, "maskClip": 10, "maskOrigin": 10, "maskSize": 10, "maskComposite": 10, "mask": 10, "maskBorderSource": 10, "maskBorderMode": 10, "maskBorderSlice": 10, "maskBorderWidth": 10, "maskBorderOutset": 10, "maskBorderRepeat": 10, "maskBorder": 10, "maskType": 10, "textSizeAdjust": 10, "textDecorationStyle": 10, "textDecorationSkip": 10, "textDecorationLine": 10, "textDecorationColor": 10, "shapeImageThreshold": 10, "shapeImageMargin": 10, "shapeImageOutside": 10, "filter": 9, "hyphens": 10, "flowInto": 10, "flowFrom": 10, "breakBefore": 8.1, "breakAfter": 8.1, "breakInside": 8.1, "regionFragment": 10, "columnCount": 8.1, "columnFill": 8.1, "columnGap": 8.1, "columnRule": 8.1, "columnRuleColor": 8.1, "columnRuleStyle": 8.1, "columnRuleWidth": 8.1, "columns": 8.1, "columnSpan": 8.1, "columnWidth": 8.1 }, "android": { "borderImage": 4.2, "borderImageOutset": 4.2, "borderImageRepeat": 4.2, "borderImageSlice": 4.2, "borderImageSource": 4.2, "borderImageWidth": 4.2, "flex": 4.2, "flexBasis": 4.2, "flexDirection": 4.2, "flexGrow": 4.2, "flexFlow": 4.2, "flexShrink": 4.2, "flexWrap": 4.2, "alignContent": 4.2, "alignItems": 4.2, "alignSelf": 4.2, "justifyContent": 4.2, "order": 4.2, "transition": 4.2, "transitionDelay": 4.2, "transitionDuration": 4.2, "transitionProperty": 4.2, "transitionTimingFunction": 4.2, "transform": 4.4, "transformOrigin": 4.4, "transformOriginX": 4.4, "transformOriginY": 4.4, "backfaceVisibility": 4.4, "perspective": 4.4, "perspectiveOrigin": 4.4, "transformStyle": 4.4, "transformOriginZ": 4.4, "animation": 4.4, "animationDelay": 4.4, "animationDirection": 4.4, "animationFillMode": 4.4, "animationDuration": 4.4, "animationIterationCount": 4.4, "animationName": 4.4, "animationPlayState": 4.4, "animationTimingFunction": 4.4, "appearance": 53, "userSelect": 53, "fontKerning": 4.4, "textEmphasisPosition": 53, "textEmphasis": 53, "textEmphasisStyle": 53, "textEmphasisColor": 53, "boxDecorationBreak": 53, "clipPath": 53, "maskImage": 53, "maskMode": 53, "maskRepeat": 53, "maskPosition": 53, "maskClip": 53, "maskOrigin": 53, "maskSize": 53, "maskComposite": 53, "mask": 53, "maskBorderSource": 53, "maskBorderMode": 53, "maskBorderSlice": 53, "maskBorderWidth": 53, "maskBorderOutset": 53, "maskBorderRepeat": 53, "maskBorder": 53, "maskType": 53, "filter": 4.4, "fontFeatureSettings": 4.4, "breakAfter": 53, "breakBefore": 53, "breakInside": 53, "columnCount": 53, "columnFill": 53, "columnGap": 53, "columnRule": 53, "columnRuleColor": 53, "columnRuleStyle": 53, "columnRuleWidth": 53, "columns": 53, "columnSpan": 53, "columnWidth": 53 }, "and_chr": { "appearance": 56, "textEmphasisPosition": 56, "textEmphasis": 56, "textEmphasisStyle": 56, "textEmphasisColor": 56, "boxDecorationBreak": 56, "maskImage": 56, "maskMode": 56, "maskRepeat": 56, "maskPosition": 56, "maskClip": 56, "maskOrigin": 56, "maskSize": 56, "maskComposite": 56, "mask": 56, "maskBorderSource": 56, "maskBorderMode": 56, "maskBorderSlice": 56, "maskBorderWidth": 56, "maskBorderOutset": 56, "maskBorderRepeat": 56, "maskBorder": 56, "maskType": 56, "textDecorationStyle": 56, "textDecorationSkip": 56, "textDecorationLine": 56, "textDecorationColor": 56 }, "and_uc": { "flex": 11, "flexBasis": 11, "flexDirection": 11, "flexGrow": 11, "flexFlow": 11, "flexShrink": 11, "flexWrap": 11, "alignContent": 11, "alignItems": 11, "alignSelf": 11, "justifyContent": 11, "order": 11, "transition": 11, "transitionDelay": 11, "transitionDuration": 11, "transitionProperty": 11, "transitionTimingFunction": 11, "transform": 11, "transformOrigin": 11, "transformOriginX": 11, "transformOriginY": 11, "backfaceVisibility": 11, "perspective": 11, "perspectiveOrigin": 11, "transformStyle": 11, "transformOriginZ": 11, "animation": 11, "animationDelay": 11, "animationDirection": 11, "animationFillMode": 11, "animationDuration": 11, "animationIterationCount": 11, "animationName": 11, "animationPlayState": 11, "animationTimingFunction": 11, "appearance": 11, "userSelect": 11, "fontKerning": 11, "textEmphasisPosition": 11, "textEmphasis": 11, "textEmphasisStyle": 11, "textEmphasisColor": 11, "maskImage": 11, "maskMode": 11, "maskRepeat": 11, "maskPosition": 11, "maskClip": 11, "maskOrigin": 11, "maskSize": 11, "maskComposite": 11, "mask": 11, "maskBorderSource": 11, "maskBorderMode": 11, "maskBorderSlice": 11, "maskBorderWidth": 11, "maskBorderOutset": 11, "maskBorderRepeat": 11, "maskBorder": 11, "maskType": 11, "textSizeAdjust": 11, "filter": 11, "hyphens": 11, "flowInto": 11, "flowFrom": 11, "breakBefore": 11, "breakAfter": 11, "breakInside": 11, "regionFragment": 11, "fontFeatureSettings": 11, "columnCount": 11, "columnFill": 11, "columnGap": 11, "columnRule": 11, "columnRuleColor": 11, "columnRuleStyle": 11, "columnRuleWidth": 11, "columns": 11, "columnSpan": 11, "columnWidth": 11 }, "op_mini": {} }
 }; /* eslint-disable */
-},{"inline-style-prefixer/dynamic/plugins/calc":128,"inline-style-prefixer/dynamic/plugins/flex":129,"inline-style-prefixer/dynamic/plugins/flexboxIE":130,"inline-style-prefixer/dynamic/plugins/flexboxOld":131,"inline-style-prefixer/dynamic/plugins/gradient":132,"inline-style-prefixer/dynamic/plugins/sizing":133,"inline-style-prefixer/dynamic/plugins/transition":134}],176:[function(require,module,exports){
+},{"inline-style-prefixer/dynamic/plugins/calc":128,"inline-style-prefixer/dynamic/plugins/flex":129,"inline-style-prefixer/dynamic/plugins/flexboxIE":130,"inline-style-prefixer/dynamic/plugins/flexboxOld":131,"inline-style-prefixer/dynamic/plugins/gradient":132,"inline-style-prefixer/dynamic/plugins/sizing":133,"inline-style-prefixer/dynamic/plugins/transition":134}],180:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -9996,7 +10641,7 @@ exports.default = {
   plugins: [_calc2.default, _flex2.default, _flexboxIE2.default, _flexboxOld2.default, _gradient2.default, _sizing2.default, _transition2.default],
   prefixMap: { "transform": ["Webkit", "ms"], "transformOrigin": ["Webkit", "ms"], "transformOriginX": ["Webkit", "ms"], "transformOriginY": ["Webkit", "ms"], "backfaceVisibility": ["Webkit"], "perspective": ["Webkit"], "perspectiveOrigin": ["Webkit"], "transformStyle": ["Webkit"], "transformOriginZ": ["Webkit"], "animation": ["Webkit"], "animationDelay": ["Webkit"], "animationDirection": ["Webkit"], "animationFillMode": ["Webkit"], "animationDuration": ["Webkit"], "animationIterationCount": ["Webkit"], "animationName": ["Webkit"], "animationPlayState": ["Webkit"], "animationTimingFunction": ["Webkit"], "appearance": ["Webkit", "Moz"], "userSelect": ["Webkit", "Moz", "ms"], "fontKerning": ["Webkit"], "textEmphasisPosition": ["Webkit"], "textEmphasis": ["Webkit"], "textEmphasisStyle": ["Webkit"], "textEmphasisColor": ["Webkit"], "boxDecorationBreak": ["Webkit"], "clipPath": ["Webkit"], "maskImage": ["Webkit"], "maskMode": ["Webkit"], "maskRepeat": ["Webkit"], "maskPosition": ["Webkit"], "maskClip": ["Webkit"], "maskOrigin": ["Webkit"], "maskSize": ["Webkit"], "maskComposite": ["Webkit"], "mask": ["Webkit"], "maskBorderSource": ["Webkit"], "maskBorderMode": ["Webkit"], "maskBorderSlice": ["Webkit"], "maskBorderWidth": ["Webkit"], "maskBorderOutset": ["Webkit"], "maskBorderRepeat": ["Webkit"], "maskBorder": ["Webkit"], "maskType": ["Webkit"], "textDecorationStyle": ["Webkit", "Moz"], "textDecorationSkip": ["Webkit", "Moz"], "textDecorationLine": ["Webkit", "Moz"], "textDecorationColor": ["Webkit", "Moz"], "filter": ["Webkit"], "fontFeatureSettings": ["Webkit", "Moz"], "breakAfter": ["Webkit", "Moz", "ms"], "breakBefore": ["Webkit", "Moz", "ms"], "breakInside": ["Webkit", "Moz", "ms"], "columnCount": ["Webkit", "Moz"], "columnFill": ["Webkit", "Moz"], "columnGap": ["Webkit", "Moz"], "columnRule": ["Webkit", "Moz"], "columnRuleColor": ["Webkit", "Moz"], "columnRuleStyle": ["Webkit", "Moz"], "columnRuleWidth": ["Webkit", "Moz"], "columns": ["Webkit", "Moz"], "columnSpan": ["Webkit", "Moz"], "columnWidth": ["Webkit", "Moz"], "flex": ["Webkit", "ms"], "flexBasis": ["Webkit"], "flexDirection": ["Webkit", "ms"], "flexGrow": ["Webkit"], "flexFlow": ["Webkit", "ms"], "flexShrink": ["Webkit"], "flexWrap": ["Webkit", "ms"], "alignContent": ["Webkit"], "alignItems": ["Webkit"], "alignSelf": ["Webkit"], "justifyContent": ["Webkit"], "order": ["Webkit"], "transitionDelay": ["Webkit"], "transitionDuration": ["Webkit"], "transitionProperty": ["Webkit"], "transitionTimingFunction": ["Webkit"], "backdropFilter": ["Webkit"], "scrollSnapType": ["Webkit", "ms"], "scrollSnapPointsX": ["Webkit", "ms"], "scrollSnapPointsY": ["Webkit", "ms"], "scrollSnapDestination": ["Webkit", "ms"], "scrollSnapCoordinate": ["Webkit", "ms"], "shapeImageThreshold": ["Webkit"], "shapeImageMargin": ["Webkit"], "shapeImageOutside": ["Webkit"], "hyphens": ["Webkit", "Moz", "ms"], "flowInto": ["Webkit", "ms"], "flowFrom": ["Webkit", "ms"], "regionFragment": ["Webkit", "ms"], "boxSizing": ["Moz"], "textAlignLast": ["Moz"], "tabSize": ["Moz"], "wrapFlow": ["ms"], "wrapThrough": ["ms"], "wrapMargin": ["ms"], "touchAction": ["ms"], "gridTemplateColumns": ["ms"], "gridTemplateRows": ["ms"], "gridTemplateAreas": ["ms"], "gridTemplate": ["ms"], "gridAutoColumns": ["ms"], "gridAutoRows": ["ms"], "gridAutoFlow": ["ms"], "grid": ["ms"], "gridRowStart": ["ms"], "gridColumnStart": ["ms"], "gridRowEnd": ["ms"], "gridRow": ["ms"], "gridColumn": ["ms"], "gridColumnEnd": ["ms"], "gridColumnGap": ["ms"], "gridRowGap": ["ms"], "gridArea": ["ms"], "gridGap": ["ms"], "textSizeAdjust": ["Webkit", "ms"], "borderImage": ["Webkit"], "borderImageOutset": ["Webkit"], "borderImageRepeat": ["Webkit"], "borderImageSlice": ["Webkit"], "borderImageSource": ["Webkit"], "borderImageWidth": ["Webkit"] }
 }; /* eslint-disable */
-},{"inline-style-prefixer/static/plugins/calc":136,"inline-style-prefixer/static/plugins/flex":137,"inline-style-prefixer/static/plugins/flexboxIE":138,"inline-style-prefixer/static/plugins/flexboxOld":139,"inline-style-prefixer/static/plugins/gradient":140,"inline-style-prefixer/static/plugins/sizing":141,"inline-style-prefixer/static/plugins/transition":142}],177:[function(require,module,exports){
+},{"inline-style-prefixer/static/plugins/calc":136,"inline-style-prefixer/static/plugins/flex":137,"inline-style-prefixer/static/plugins/flexboxIE":138,"inline-style-prefixer/static/plugins/flexboxOld":139,"inline-style-prefixer/static/plugins/gradient":140,"inline-style-prefixer/static/plugins/sizing":141,"inline-style-prefixer/static/plugins/transition":142}],181:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -10025,7 +10670,7 @@ function callOnce() {
   }
 }
 }).call(this,require('_process'))
-},{"_process":200,"warning":199}],178:[function(require,module,exports){
+},{"_process":204,"warning":203}],182:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -10270,7 +10915,7 @@ function lighten(color, coefficient) {
   return convertColorToString(color);
 }
 }).call(this,require('_process'))
-},{"_process":200,"warning":199}],179:[function(require,module,exports){
+},{"_process":204,"warning":203}],183:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -10368,7 +11013,7 @@ function rtl(muiTheme) {
     };
   }
 }
-},{"babel-runtime/core-js/object/keys":8}],180:[function(require,module,exports){
+},{"babel-runtime/core-js/object/keys":8}],184:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -10460,7 +11105,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],181:[function(require,module,exports){
+},{}],185:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -10523,7 +11168,7 @@ function checkPropTypes(typeSpecs, values, location, componentName, getStack) {
 module.exports = checkPropTypes;
 
 }).call(this,require('_process'))
-},{"./lib/ReactPropTypesSecret":185,"_process":200,"fbjs/lib/invariant":121,"fbjs/lib/warning":125}],182:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":189,"_process":204,"fbjs/lib/invariant":121,"fbjs/lib/warning":125}],186:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  *
@@ -10583,7 +11228,7 @@ module.exports = function() {
   return ReactPropTypes;
 };
 
-},{"./lib/ReactPropTypesSecret":185,"fbjs/lib/emptyFunction":116,"fbjs/lib/invariant":121}],183:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":189,"fbjs/lib/emptyFunction":116,"fbjs/lib/invariant":121}],187:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -11129,7 +11774,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 };
 
 }).call(this,require('_process'))
-},{"./checkPropTypes":181,"./lib/ReactPropTypesSecret":185,"_process":200,"fbjs/lib/emptyFunction":116,"fbjs/lib/invariant":121,"fbjs/lib/warning":125,"object-assign":180}],184:[function(require,module,exports){
+},{"./checkPropTypes":185,"./lib/ReactPropTypesSecret":189,"_process":204,"fbjs/lib/emptyFunction":116,"fbjs/lib/invariant":121,"fbjs/lib/warning":125,"object-assign":184}],188:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -11161,7 +11806,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./factoryWithThrowingShims":182,"./factoryWithTypeCheckers":183,"_process":200}],185:[function(require,module,exports){
+},{"./factoryWithThrowingShims":186,"./factoryWithTypeCheckers":187,"_process":204}],189:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  *
@@ -11175,7 +11820,7 @@ var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
 
-},{}],186:[function(require,module,exports){
+},{}],190:[function(require,module,exports){
 (function (process){
 /** @license React v16.3.2
  * react-dom.development.js
@@ -27833,7 +28478,7 @@ module.exports = reactDom;
 }
 
 }).call(this,require('_process'))
-},{"_process":200,"fbjs/lib/ExecutionEnvironment":112,"fbjs/lib/camelizeStyleName":114,"fbjs/lib/containsNode":115,"fbjs/lib/emptyFunction":116,"fbjs/lib/emptyObject":117,"fbjs/lib/getActiveElement":118,"fbjs/lib/hyphenateStyleName":120,"fbjs/lib/invariant":121,"fbjs/lib/shallowEqual":124,"fbjs/lib/warning":125,"object-assign":180,"prop-types/checkPropTypes":181,"react":195}],187:[function(require,module,exports){
+},{"_process":204,"fbjs/lib/ExecutionEnvironment":112,"fbjs/lib/camelizeStyleName":114,"fbjs/lib/containsNode":115,"fbjs/lib/emptyFunction":116,"fbjs/lib/emptyObject":117,"fbjs/lib/getActiveElement":118,"fbjs/lib/hyphenateStyleName":120,"fbjs/lib/invariant":121,"fbjs/lib/shallowEqual":124,"fbjs/lib/warning":125,"object-assign":184,"prop-types/checkPropTypes":185,"react":199}],191:[function(require,module,exports){
 /** @license React v16.3.2
  * react-dom.production.min.js
  *
@@ -28081,7 +28726,7 @@ var Gg={createPortal:Fg,findDOMNode:function(a){return null==a?null:1===a.nodeTy
 null})}),!0):!1},unstable_createPortal:function(){return Fg.apply(void 0,arguments)},unstable_batchedUpdates:X.batchedUpdates,unstable_deferredUpdates:X.deferredUpdates,flushSync:X.flushSync,unstable_flushControlled:X.flushControlled,__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{EventPluginHub:Ra,EventPluginRegistry:Ca,EventPropagators:kb,ReactControlledComponent:$b,ReactDOMComponentTree:bb,ReactDOMEventListener:$d},unstable_createRoot:function(a,b){return new tg(a,!0,null!=b&&!0===b.hydrate)}};
 X.injectIntoDevTools({findFiberByHostInstance:Ua,bundleType:0,version:"16.3.2",rendererPackageName:"react-dom"});var Hg=Object.freeze({default:Gg}),Ig=Hg&&Gg||Hg;module.exports=Ig["default"]?Ig["default"]:Ig;
 
-},{"fbjs/lib/ExecutionEnvironment":112,"fbjs/lib/containsNode":115,"fbjs/lib/emptyFunction":116,"fbjs/lib/emptyObject":117,"fbjs/lib/getActiveElement":118,"fbjs/lib/invariant":121,"fbjs/lib/shallowEqual":124,"object-assign":180,"react":195}],188:[function(require,module,exports){
+},{"fbjs/lib/ExecutionEnvironment":112,"fbjs/lib/containsNode":115,"fbjs/lib/emptyFunction":116,"fbjs/lib/emptyObject":117,"fbjs/lib/getActiveElement":118,"fbjs/lib/invariant":121,"fbjs/lib/shallowEqual":124,"object-assign":184,"react":199}],192:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -28123,7 +28768,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":186,"./cjs/react-dom.production.min.js":187,"_process":200}],189:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":190,"./cjs/react-dom.production.min.js":191,"_process":204}],193:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -28336,7 +28981,7 @@ EventListener.propTypes = process.env.NODE_ENV !== "production" ? {
 
 exports.default = EventListener;
 }).call(this,require('_process'))
-},{"./supports":190,"_process":200,"babel-runtime/core-js/object/assign":4,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/core-js/object/keys":8,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"babel-runtime/helpers/typeof":20,"fbjs/lib/shallowEqual":124,"prop-types":184,"react":195,"warning":199}],190:[function(require,module,exports){
+},{"./supports":194,"_process":204,"babel-runtime/core-js/object/assign":4,"babel-runtime/core-js/object/get-prototype-of":7,"babel-runtime/core-js/object/keys":8,"babel-runtime/helpers/classCallCheck":12,"babel-runtime/helpers/createClass":13,"babel-runtime/helpers/inherits":16,"babel-runtime/helpers/objectWithoutProperties":17,"babel-runtime/helpers/possibleConstructorReturn":18,"babel-runtime/helpers/typeof":20,"fbjs/lib/shallowEqual":124,"prop-types":188,"react":199,"warning":203}],194:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -28383,7 +29028,7 @@ var passiveOption = exports.passiveOption = function () {
 }();
 
 exports.default = {};
-},{"babel-runtime/core-js/object/define-property":6}],191:[function(require,module,exports){
+},{"babel-runtime/core-js/object/define-property":6}],195:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -28655,7 +29300,7 @@ TransitionGroup.defaultProps = defaultProps;
 exports.default = TransitionGroup;
 module.exports = exports['default'];
 }).call(this,require('_process'))
-},{"./utils/ChildMapping":192,"_process":200,"chain-function":22,"prop-types":184,"react":195,"warning":199}],192:[function(require,module,exports){
+},{"./utils/ChildMapping":196,"_process":204,"chain-function":22,"prop-types":188,"react":199,"warning":203}],196:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -28747,7 +29392,7 @@ function mergeChildMappings(prev, next) {
 
   return childMapping;
 }
-},{"react":195}],193:[function(require,module,exports){
+},{"react":199}],197:[function(require,module,exports){
 (function (process){
 /** @license React v16.3.2
  * react.development.js
@@ -30165,7 +30810,7 @@ module.exports = react;
 }
 
 }).call(this,require('_process'))
-},{"_process":200,"fbjs/lib/emptyFunction":116,"fbjs/lib/emptyObject":117,"fbjs/lib/invariant":121,"fbjs/lib/warning":125,"object-assign":180,"prop-types/checkPropTypes":181}],194:[function(require,module,exports){
+},{"_process":204,"fbjs/lib/emptyFunction":116,"fbjs/lib/emptyObject":117,"fbjs/lib/invariant":121,"fbjs/lib/warning":125,"object-assign":184,"prop-types/checkPropTypes":185}],198:[function(require,module,exports){
 /** @license React v16.3.2
  * react.production.min.js
  *
@@ -30189,7 +30834,7 @@ _calculateChangedBits:b,_defaultValue:a,_currentValue:a,_changedBits:0,Provider:
 (k=a.type.defaultProps);for(c in b)J.call(b,c)&&!K.hasOwnProperty(c)&&(d[c]=void 0===b[c]&&void 0!==k?k[c]:b[c])}c=arguments.length-2;if(1===c)d.children=e;else if(1<c){k=Array(c);for(var l=0;l<c;l++)k[l]=arguments[l+2];d.children=k}return{$$typeof:t,type:a.type,key:g,ref:h,props:d,_owner:f}},createFactory:function(a){var b=L.bind(null,a);b.type=a;return b},isValidElement:M,version:"16.3.2",__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{ReactCurrentOwner:I,assign:m}},X=Object.freeze({default:W}),
 Y=X&&W||X;module.exports=Y["default"]?Y["default"]:Y;
 
-},{"fbjs/lib/emptyFunction":116,"fbjs/lib/emptyObject":117,"fbjs/lib/invariant":121,"object-assign":180}],195:[function(require,module,exports){
+},{"fbjs/lib/emptyFunction":116,"fbjs/lib/emptyObject":117,"fbjs/lib/invariant":121,"object-assign":184}],199:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -30200,7 +30845,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react.development.js":193,"./cjs/react.production.min.js":194,"_process":200}],196:[function(require,module,exports){
+},{"./cjs/react.development.js":197,"./cjs/react.production.min.js":198,"_process":204}],200:[function(require,module,exports){
 "use strict";
 
 exports.__esModule = true;
@@ -30226,7 +30871,7 @@ function compose() {
     };
   });
 }
-},{}],197:[function(require,module,exports){
+},{}],201:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -30238,7 +30883,7 @@ var _shallowEqual2 = _interopRequireDefault(_shallowEqual);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = _shallowEqual2.default;
-},{"fbjs/lib/shallowEqual":124}],198:[function(require,module,exports){
+},{"fbjs/lib/shallowEqual":124}],202:[function(require,module,exports){
 module.exports = function (target) {
   for (var i = 1; i < arguments.length; i++) {
     var source = arguments[i];
@@ -30251,7 +30896,7 @@ module.exports = function (target) {
   return target;
 };
 
-},{}],199:[function(require,module,exports){
+},{}],203:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-2015, Facebook, Inc.
@@ -30315,7 +30960,7 @@ if (process.env.NODE_ENV !== 'production') {
 module.exports = warning;
 
 }).call(this,require('_process'))
-},{"_process":200}],200:[function(require,module,exports){
+},{"_process":204}],204:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 

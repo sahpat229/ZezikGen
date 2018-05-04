@@ -30,3 +30,7 @@
     /* background-color: #131313; */
     /* resize: none; */
 /* } */
+
+.display-linebreak {
+    white-space: pre-line;
+}
