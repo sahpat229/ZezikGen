@@ -11,6 +11,7 @@ def generate_sample(dataset, n_chars_generate=600, primer=None, temperature=1.0)
     training_file_path = os.path.join("./data/", dataset + ".txt")
 
     data_provider = dataprovider.DataProvider(training_file_path, config_file_path)
+    tf.reset_default_graph()
     with tf.Session() as sess:
         char_model = model.CharacterModel(data_provider, sess, config_file_path, dataset)
         char_model.initialize(restore=True)
